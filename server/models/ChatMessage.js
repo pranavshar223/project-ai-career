@@ -13,45 +13,49 @@ const chatMessageSchema = new mongoose.Schema({
   content: {
     type: String,
     required: true,
-    maxlength: [2000, 'Message cannot exceed 2000 characters']
+    maxlength: [10000, 'Message cannot exceed 10000 characters']
   },
   role: {
     type: String,
     enum: ['user', 'assistant'],
     required: true
   },
-  metadata: {
-    extractedSkills: [String],
-    extractedGoals: [String],
-    extractedTools: [String],
-    extractedCertifications: [String],
-    sentiment: {
-      type: String,
-      enum: ['positive', 'negative', 'neutral'],
-      default: 'neutral'
-    },
-    confidence: {
-      type: Number,
-      min: 0,
-      max: 1,
-      default: 0.8
-    },
-    intent: String,
-    topics: [String],
-    actionItems: [String],
-    urgency: {
-      type: String,
-      enum: ['low', 'medium', 'high'],
-      default: 'low'
-    },
-    experienceLevel: String,
-    responseQuality: {
-      type: Number,
-      min: 0,
-      max: 10,
-      default: 7
-    }
+ metadata: {
+  extractedSkills: [{
+    name: String,
+    category: String
+  }],
+  extractedGoals: [String],
+  extractedTools: [String],
+  extractedCertifications: [String],
+  sentiment: {
+    type: String,
+    enum: ['positive', 'negative', 'neutral'],
+    default: 'neutral'
   },
+  confidence: {
+    type: Number,
+    min: 0,
+    max: 1,
+    default: 0.8
+  },
+  intent: String,
+  topics: [String],
+  actionItems: [String],
+  urgency: {
+    type: String,
+    enum: ['low', 'medium', 'high'],
+    default: 'low'
+  },
+  experienceLevel: String,
+  responseQuality: {
+    type: Number,
+    min: 0,
+    max: 10,
+    default: 7
+  }
+},
+
   tokens: {
     input: Number,
     output: Number
