@@ -1,9 +1,14 @@
 const express = require('express');
 const cors = require('cors');
+const connectDB = require('./config/database');
+const errorHandler = require('./middleware/errorHandler');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Connect to database
+connectDB();
 
 // Middleware
 app.use(cors());
@@ -14,14 +19,17 @@ app.get('/', (req, res) => {
   res.json({ message: 'AI Career Assistant API Server' });
 });
 
-// Auth routes placeholder
-app.post('/api/auth/register', (req, res) => {
-  res.json({ message: 'Registration endpoint' });
-});
+// Routes
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/users', require('./routes/users'));
+app.use('/api/chat', require('./routes/chat'));
+app.use('/api/jobs', require('./routes/jobs'));
+app.use('/api/roadmaps', require('./routes/roadmaps'));
+app.use('/api/skills', require('./routes/skills'));
+app.use('/api/analytics', require('./routes/analytics'));
 
-app.post('/api/auth/login', (req, res) => {
-  res.json({ message: 'Login endpoint' });
-});
+// Error handling middleware
+app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
