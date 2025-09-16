@@ -40,6 +40,9 @@ router.post('/generate', auth, [
     // Get user profile for context
     const user = await User.findById(userId);
 
+    // Add this log
+    console.log('POST /generate called by user:', userId, 'Career goal:', careerGoal);
+
     // Generate roadmap using AI
     const roadmapData = await generateRoadmapWithAI(careerGoal, {
       userProfile: user,
@@ -58,8 +61,11 @@ router.post('/generate', auth, [
       totalEstimatedDuration: roadmapData.totalEstimatedDuration,
       difficulty: roadmapData.difficulty
     });
-
+    console.log('Roadmap data before saving:', roadmapData);
     await roadmap.save();
+    console.log('Roadmap saved successfully with ID:', roadmap._id);
+
+    // await roadmap.save();
 
     res.status(201).json({
       message: 'Roadmap generated successfully',
@@ -89,7 +95,9 @@ router.post('/generate', auth, [
 // @desc    Get all roadmaps for user
 // @access  Private
 router.get('/', auth, async (req, res) => {
+
   try {
+    console.log('GET /api/roadmaps called by user:', req.user?._id);
     const { page = 1, limit = 10, active = true } = req.query;
 
     const query = { userId: req.user._id };
@@ -101,6 +109,9 @@ router.get('/', auth, async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);
+
+      // ✅ Add here: log how many roadmaps were found
+      console.log('Found roadmaps:', roadmaps.length);
 
     const total = await Roadmap.countDocuments(query);
 

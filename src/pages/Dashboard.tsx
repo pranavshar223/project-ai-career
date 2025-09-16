@@ -52,7 +52,7 @@ const Dashboard: React.FC = () => {
         const gaps = profileResponse.data.profile.skills.map((skill: any) => {
           const currentLevel =
             skill.level === "beginner"
-              ? 30
+              ? 1
               : skill.level === "intermediate"
               ? 60
               : 90;

@@ -358,7 +358,11 @@ const Profile: React.FC = () => {
                   >
                     <span>{skill.name} ({skill.level})</span>
                     <button
-                      onClick={() => handleRemoveSkill(skill._id)}
+                      onClick={() => {
+                        console.log("Clicked delete for", skill._id);
+                        handleRemoveSkill(skill._id);
+                      }}
+                      
                       className="ml-2 text-blue-600 hover:text-blue-800"
                     >
                       <X className="w-3 h-3" />

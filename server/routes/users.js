@@ -223,26 +223,23 @@ router.put('/skills/:skillId', auth, [
 // @access  Private
 router.delete('/skills/:skillId', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
-    
-    const skill = user.skills.id(req.params.skillId);
-    if (!skill) {
-      return res.status(404).json({
-        message: 'Skill not found'
-      });
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { $pull: { skills: { _id: req.params.skillId } } }, // ✅ Pull out the skill
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
     }
 
-    skill.remove();
-    await user.save();
-
     res.json({
-      message: 'Skill removed successfully'
+      message: 'Skill removed successfully',
+      skills: user.skills
     });
   } catch (error) {
     console.error('Remove skill error:', error);
-    res.status(500).json({
-      message: 'Error removing skill'
-    });
+    res.status(500).json({ message: 'Error removing skill' });
   }
 });
 

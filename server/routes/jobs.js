@@ -212,48 +212,95 @@ router.delete('/saved/:jobId', auth, async (req, res) => {
 });
 
 // Helper function to fetch jobs from external API
+// async function fetchJobsFromAPI(params) {
+//   try {
+//     // Check if RapidAPI key is available
+//     if (!process.env.RAPIDAPI_KEY) {
+//       console.log('No RapidAPI key found, using mock data');
+//       return getMockJobs(params);
+//     }
+
+//     // Example using Adzuna API via RapidAPI
+//     const response = await axios.get('https://api.adzuna.com/v1/api/jobs/us/search/1', {
+//       params: {
+//         app_id: process.env.ADZUNA_APP_ID,
+//         app_key: process.env.ADZUNA_API_KEY,
+//         what: params.query,
+//         where: params.location,
+//         results_per_page: params.limit,
+//         page: params.page
+//       },
+//       timeout: 10000
+//     });
+
+//     return response.data.results.map(job => ({
+//       id: job.id.toString(),
+//       title: job.title,
+//       company: job.company.display_name,
+//       location: job.location.display_name,
+//       description: job.description,
+//       salary: job.salary_min && job.salary_max ? 
+//         `$${job.salary_min.toLocaleString()} - $${job.salary_max.toLocaleString()}` : null,
+//       applyUrl: job.redirect_url,
+//       postedDate: new Date(job.created),
+//       source: 'adzuna',
+//       remote: job.location.display_name.toLowerCase().includes('remote'),
+//       jobType: 'full-time'
+//     }));
+//   } catch (error) {
+//     console.error('External API error:', error.message);
+//     // Fallback to mock data
+//     return getMockJobs(params);
+//   }
+// }
+// Helper function to fetch jobs from external API
 async function fetchJobsFromAPI(params) {
   try {
     // Check if RapidAPI key is available
     if (!process.env.RAPIDAPI_KEY) {
-      console.log('No RapidAPI key found, using mock data');
+      console.log("No RapidAPI key found, using mock data");
       return getMockJobs(params);
     }
-
-    // Example using Adzuna API via RapidAPI
-    const response = await axios.get('https://api.adzuna.com/v1/api/jobs/us/search/1', {
-      params: {
-        app_id: process.env.ADZUNA_APP_ID,
-        app_key: process.env.ADZUNA_API_KEY,
-        what: params.query,
-        where: params.location,
-        results_per_page: params.limit,
-        page: params.page
+    const limit = params.limit || 10;
+    const pagesNeeded = Math.ceil(limit / 10);
+    // ✅ Using JSearch API via RapidAPI
+    const response = await axios.get("https://jsearch.p.rapidapi.com/search?query=developer%20jobs%20in%20chicago&page=1&num_pages=1&country=us&date_posted=all", {
+      headers: {
+        "X-RapidAPI-Key": process.env.RAPIDAPI_KEY,
+        "X-RapidAPI-Host": "jsearch.p.rapidapi.com",
       },
-      timeout: 10000
+      params: {
+        query: `${params.query} in ${params.location}`,
+        page: params.page || "10",
+        num_pages: pagesNeeded,
+        country: "in", // 👈 You can make this dynamic if needed
+      },
+      timeout: 10000,
     });
 
-    return response.data.results.map(job => ({
-      id: job.id.toString(),
-      title: job.title,
-      company: job.company.display_name,
-      location: job.location.display_name,
-      description: job.description,
-      salary: job.salary_min && job.salary_max ? 
-        `$${job.salary_min.toLocaleString()} - $${job.salary_max.toLocaleString()}` : null,
-      applyUrl: job.redirect_url,
-      postedDate: new Date(job.created),
-      source: 'adzuna',
-      remote: job.location.display_name.toLowerCase().includes('remote'),
-      jobType: 'full-time'
+    // ✅ Map JSearch response to match your old Adzuna response shape
+    return response.data.data.map((job) => ({
+      id: job.job_id.toString(),
+      title: job.job_title,
+      company: job.employer_name,
+      location: job.job_city || job.job_country,
+      description: job.job_description,
+      salary:
+        job.job_min_salary && job.job_max_salary
+          ? `${job.job_salary_currency || "INR"} ${job.job_min_salary.toLocaleString()} - ${job.job_max_salary.toLocaleString()}`
+          : null,
+      applyUrl: job.job_apply_link,
+      postedDate: new Date(job.job_posted_at_datetime_utc),
+      source: "jsearch",
+      remote: job.job_is_remote === true,
+      jobType: job.job_employment_type || "full-time",
     }));
   } catch (error) {
-    console.error('External API error:', error.message);
+    console.error("External API error:", error.message);
     // Fallback to mock data
     return getMockJobs(params);
   }
 }
-
 // Mock job data for development/fallback
 function getMockJobs(params) {
   const mockJobs = [

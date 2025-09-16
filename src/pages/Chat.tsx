@@ -18,23 +18,67 @@ const Chat: React.FC = () => {
   const loadChatHistory = async () => {
     try {
       const response = await axios.get(`/chat/history/${sessionId}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (response.data.messages) {
-        const formattedMessages: ChatMessage[] = response.data.messages.map((msg: any) => ({
-          id: msg.id,
-          content: msg.content,
-          role: msg.role,
-          timestamp: new Date(msg.timestamp),
-        }));
+        const formattedMessages: ChatMessage[] = response.data.messages.map(
+          (msg: any) => ({
+            id: msg.id,
+            content: msg.content,
+            role: msg.role,
+            timestamp: new Date(msg.timestamp),
+          })
+        );
         setMessages(formattedMessages);
       }
     } catch (error) {
-      console.error('Error loading chat history:', error);
+      console.error("Error loading chat history:", error);
     }
   };
 
+  // const handleSendMessage = async (content: string) => {
+  //   const userMessage: ChatMessage = {
+  //     id: Date.now().toString(),
+  //     content,
+  //     role: "user",
+  //     timestamp: new Date(),
+  //   };
+
+  //   setMessages((prev) => [...prev, userMessage]);
+  //   setIsLoading(true);
+
+  //   try {
+  //     const response = await axios.post('/chat/message', {
+  //       content,
+  //       sessionId,
+  //     }, {
+  //       headers: { Authorization: `Bearer ${token}` }
+  //     });
+
+  //     if (response.data.response) {
+  //       const aiMessage: ChatMessage = {
+  //         id: response.data.response.id,
+  //         content: response.data.response.content,
+  //         role: "assistant",
+  //         timestamp: new Date(response.data.response.timestamp),
+  //       };
+
+  //       setMessages((prev) => [...prev, aiMessage]);
+  //     }
+  //   } catch (error: any) {
+  //     console.error("Error sending message:", error);
+  //     const errorMessage: ChatMessage = {
+  //       id: (Date.now() + 1).toString(),
+  //       content: error.response?.data?.message || "I'm sorry, I encountered an error. Please try again.",
+  //       role: "assistant",
+  //       timestamp: new Date(),
+  //     };
+  //     setMessages((prev) => [...prev, errorMessage]);
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
   const handleSendMessage = async (content: string) => {
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
@@ -47,12 +91,11 @@ const Chat: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const response = await axios.post('/chat/message', {
-        content,
-        sessionId,
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await axios.post(
+        "/chat/message",
+        { content, sessionId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
       if (response.data.response) {
         const aiMessage: ChatMessage = {
@@ -63,12 +106,38 @@ const Chat: React.FC = () => {
         };
 
         setMessages((prev) => [...prev, aiMessage]);
+
+        // 🔥 Check if AI returned roadmap info
+        if (response.data.response.roadmapData) {
+          const { careerGoal, targetRole, timeframe } =
+            response.data.response.roadmapData;
+
+          try {
+            // Call your roadmap generation API
+            await axios.post(
+              "/api/roadmaps/generate",
+              {
+                careerGoal,
+                targetRole,
+                timeframe: timeframe || "6-months",
+              },
+              {
+                headers: { Authorization: `Bearer ${token}` },
+              }
+            );
+            console.log("Roadmap saved to MongoDB");
+          } catch (err) {
+            console.error("Error saving roadmap:", err);
+          }
+        }
       }
     } catch (error: any) {
       console.error("Error sending message:", error);
       const errorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        content: error.response?.data?.message || "I'm sorry, I encountered an error. Please try again.",
+        content:
+          error.response?.data?.message ||
+          "I'm sorry, I encountered an error. Please try again.",
         role: "assistant",
         timestamp: new Date(),
       };
