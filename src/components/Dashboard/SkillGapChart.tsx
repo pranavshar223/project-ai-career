@@ -29,7 +29,7 @@ const SkillGapChart: React.FC<SkillGapChartProps> = ({ data }) => {
             <Tooltip 
               formatter={(value, name) => [
                 `${value}%`, 
-                name === 'current' ? 'Current Level' : 'Required Level'
+                name === 'Current Level' ? 'Current Level' : 'Required Level'
               ]}
             />
             <Legend />
