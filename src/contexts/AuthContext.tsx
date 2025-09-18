@@ -3,6 +3,7 @@ import axios from 'axios';
 import { User } from '../types';
 
 const API_BASE_URL = 'http://localhost:5000/api';
+// const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 // Configure axios defaults
 axios.defaults.baseURL = API_BASE_URL;
@@ -112,9 +113,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       localStorage.setItem('token', newToken);
       localStorage.setItem('user', JSON.stringify(userObj));
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Login error:', error);
-      const message = error.response?.data?.message || 'Login failed';
+      let message = 'Login failed';
+      if (error && typeof error === 'object' && 'response' in error && error.response && typeof error.response === 'object' && 'data' in error.response && error.response.data && typeof error.response.data === 'object' && 'message' in error.response.data) {
+        message = (error.response as { data: { message?: string } }).data.message || message;
+      }
       throw new Error(message);
     } finally {
       setIsLoading(false);
@@ -146,9 +150,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       localStorage.setItem('token', newToken);
       localStorage.setItem('user', JSON.stringify(userObj));
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Registration error:', error);
-      const message = error.response?.data?.message || 'Registration failed';
+      let message = 'Registration failed';
+      if (
+        error &&
+        typeof error === 'object' &&
+        'response' in error &&
+        error.response &&
+        typeof error.response === 'object' &&
+        'data' in error.response &&
+        error.response.data &&
+        typeof error.response.data === 'object' &&
+        'message' in error.response.data
+      ) {
+        message = (error.response as { data: { message?: string } }).data.message || message;
+      }
       throw new Error(message);
     } finally {
       setIsLoading(false);

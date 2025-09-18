@@ -1,0 +1,51 @@
+name: Deploy Frontend to Cloud Storage
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'src/**'           # Only run if frontend files change
+      - 'public/**'
+      - 'index.html'
+      - 'vite.config.ts'
+      - 'package*.json'
+      - '.github/workflows/frontend-deploy.yml'
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  BUCKET_NAME: gs://[UNIQUE_BUCKET_NAME] # Replace with your bucket name
+
+jobs:
+  deploy:
+    name: Build and Deploy Frontend
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Authenticate to Google Cloud
+      uses: 'google-github-actions/auth@v2'
+      with:
+        credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+    - name: Set up Cloud SDK
+      uses: 'google-github-actions/setup-gcloud@v2'
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Build React App
+      run: |-
+        # Get the backend URL after it's been deployed
+        BACKEND_URL=$(gcloud run services describe my-backend-service --platform managed --region ${{ secrets.GCP_REGION }} --format 'value(status.url)')
+        echo "VITE_API_BASE_URL=$BACKEND_URL" > .env.production
+        npm install
+        npm run build
+
+    - name: Deploy to Cloud Storage
+      run: |-
+        gsutil -m rsync -R dist/ ${{ env.BUCKET_NAME }}
