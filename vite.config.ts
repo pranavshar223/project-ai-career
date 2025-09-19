@@ -6,7 +6,7 @@ export default defineConfig(({ command }) => {
   const isProduction = command === 'build';
 
   return {
-    base: isProduction ? '/ai-career-frontend-9e871/' : '/',
+    base: isProduction ? '/ai-career-frontend-9e871/' : './',
     plugins: [react()],
     optimizeDeps: {
       exclude: ['lucide-react'],
