@@ -1,0 +1,20 @@
+# Stage 1: Build the React application
+FROM node:20-slim AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
+
+# Stage 2: Create the production server
+FROM node:20-slim
+WORKDIR /app
+COPY package*.json ./
+RUN npm install --only=production
+
+# Copy the server and the built React app from the builder stage
+COPY --from=builder /app/dist ./dist
+COPY frontend-server.js .
+
+EXPOSE 8080
+CMD ["node", "frontend-server.js"]

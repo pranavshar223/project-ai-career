@@ -1,25 +1,29 @@
-name: Deploy Frontend to Cloud Storage
+name: Deploy Frontend to Cloud Run
 
 on:
   push:
     branches: [ "main" ]
     paths:
-      - 'src/**'           # Only run if frontend files change
+      - 'src/**'
       - 'public/**'
       - 'index.html'
       - 'vite.config.ts'
       - 'package*.json'
+      - 'frontend-server.js'
+      - 'Dockerfile.frontend'
       - '.github/workflows/frontend-deploy.yml'
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  BUCKET_NAME: gs://ai-career-frontend-9e871 # Replace with your bucket name
+  GAR_LOCATION: ${{ secrets.GCP_REGION }}
+  SERVICE_NAME: my-frontend-service # New service name for the frontend
+  REPOSITORY: my-project-repo
 
 jobs:
   deploy:
     name: Build and Deploy Frontend
     runs-on: ubuntu-latest
-
+    
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
@@ -32,20 +36,19 @@ jobs:
     - name: Set up Cloud SDK
       uses: 'google-github-actions/setup-gcloud@v2'
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-
-    - name: Build React App
+    - name: Build and Push Docker Image
       run: |-
-        # Get the backend URL after it's been deployed
-        BACKEND_URL=$(gcloud run services describe my-backend-service --platform managed --region ${{ secrets.GCP_REGION }} --format 'value(status.url)')
-        echo "VITE_API_BASE_URL=$BACKEND_URL" > .env.production
-        npm install
-        npm run build
+        gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev
+        docker build -t ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE_NAME }}:${{ github.sha }} -f Dockerfile.frontend .
+        docker push ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE_NAME }}:${{ github.sha }}
 
-    - name: Deploy to Cloud Storage
+    - name: Deploy to Cloud Run
       run: |-
-        gsutil -m rsync -r ./dist gs://ai-career-frontend-9e871
+        # Get the backend URL to pass to the frontend
+        BACKEND_URL=$(gcloud run services describe my-backend-service --platform managed --region ${{ env.GAR_LOCATION }} --format 'value(status.url)')
+        gcloud run deploy ${{ env.SERVICE_NAME }} \
+          --region ${{ env.GAR_LOCATION }} \
+          --image ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE_NAME }}:${{ github.sha }} \
+          --platform managed \
+          --allow-unauthenticated \
+          --set-env-vars="VITE_API_BASE_URL=$BACKEND_URL" # Pass backend URL to frontend
