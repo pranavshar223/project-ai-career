@@ -2,14 +2,18 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <base href="/ai-career-frontend-9e871/" />
-
-    <link rel="icon" type="image/svg+xml" href="vite.svg" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI Career Assistant Platform</title>
-  </head>
+
+    <script>
+      if (location.pathname.endsWith('/index.html')) {
+        location.replace(location.pathname.replace('index.html', ''));
+      }
+    </script>
+    </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="src/main.tsx"></script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
