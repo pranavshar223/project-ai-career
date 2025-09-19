@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Header from './components/Layout/Header';
 import AuthForm from './components/Auth/AuthForm';
@@ -71,12 +71,19 @@ const AppContent: React.FC = () => {
   );
 };
 
+// function App() {
+//   return (
+//     <AuthProvider>
+//       <Router>
+//         <AppContent />
+//       </Router>
+//     </AuthProvider>
+//   );
+// }
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <AppContent />
-      </Router>
+      <AppContent />
     </AuthProvider>
   );
 }
