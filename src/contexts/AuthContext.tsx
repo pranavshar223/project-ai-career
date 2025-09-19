@@ -2,18 +2,23 @@ import React, { createContext, useContext, useState, ReactNode, useEffect } from
 import axios from 'axios';
 import { User } from '../types';
 
-const API_BASE_URL = 'http://localhost:5000/api';
-// const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+// IMPORTANT: Make sure this line is uncommented for production
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
-// Configure axios defaults
 axios.defaults.baseURL = API_BASE_URL;
 
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string, background: 'student' | 'professional') => Promise<void>;
+  register: (
+    email: string,
+    password: string,
+    name: string,
+    background: 'student' | 'professional'
+  ) => Promise<void>;
   logout: () => void;
-  isLoading: boolean;
+  isLoading: boolean; // For login/register spinners
+  isAuthLoading: boolean; // For initial auth check
   token: string | null;
 }
 
@@ -35,8 +40,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
 
-  // Set up axios interceptor for authentication
+  // Add token to all requests
   useEffect(() => {
     const interceptor = axios.interceptors.request.use(
       (config) => {
@@ -45,9 +51,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
         return config;
       },
-      (error) => {
-        return Promise.reject(error);
-      }
+      (error) => Promise.reject(error)
     );
 
     return () => {
@@ -55,133 +59,109 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, [token]);
 
-  // Check for existing token on mount
-  useEffect(() => {
-    const savedToken = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
-    
-    if (savedToken && savedUser) {
-      setToken(savedToken);
-      setUser(JSON.parse(savedUser));
-      
-      // Verify token is still valid
-      verifyToken(savedToken);
-    }
-  }, []);
-
-  const verifyToken = async (tokenToVerify: string) => {
+  // Verify token with backend
+  const verifyToken = async (savedToken: string) => {
     try {
-      const response = await axios.get('/auth/me', {
-        headers: { Authorization: `Bearer ${tokenToVerify}` }
+      const res = await axios.get('/auth/verify', {
+        headers: { Authorization: `Bearer ${savedToken}` },
       });
-      
-      if (response.data.user) {
-        setUser({
-          id: response.data.user.id,
-          email: response.data.user.email,
-          name: response.data.user.name,
-          background: response.data.user.background,
-          createdAt: new Date(response.data.user.createdAt),
-        });
-      }
+      setUser(res.data.user);
+      setToken(savedToken);
+      localStorage.setItem('token', savedToken);
+      localStorage.setItem('user', JSON.stringify(res.data.user));
     } catch (error) {
-      console.error('Token verification failed:', error);
+      console.error('Token verification failed', error);
       logout();
+    } finally {
+      setIsAuthLoading(false);
     }
   };
 
+  // Login
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const response = await axios.post('/auth/login', {
-        email,
-        password,
-      });
+      const res = await axios.post('/auth/login', { email, password });
+      const { token, user } = res.data;
 
-      const { token: newToken, user: userData } = response.data;
-      
-      const userObj: User = {
-        id: userData.id,
-        email: userData.email,
-        name: userData.name,
-        background: userData.background,
-        createdAt: new Date(userData.createdAt),
-      };
+      setToken(token);
+      setUser(user);
 
-      setToken(newToken);
-      setUser(userObj);
-      
-      localStorage.setItem('token', newToken);
-      localStorage.setItem('user', JSON.stringify(userObj));
-    } catch (error: unknown) {
-      console.error('Login error:', error);
-      let message = 'Login failed';
-      if (error && typeof error === 'object' && 'response' in error && error.response && typeof error.response === 'object' && 'data' in error.response && error.response.data && typeof error.response.data === 'object' && 'message' in error.response.data) {
-        message = (error.response as { data: { message?: string } }).data.message || message;
-      }
-      throw new Error(message);
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+    } catch (error) {
+      console.error('Login failed', error);
+      throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const register = async (email: string, password: string, name: string, background: 'student' | 'professional') => {
+  // Register
+  const register = async (
+    email: string,
+    password: string,
+    name: string,
+    background: 'student' | 'professional'
+  ) => {
     setIsLoading(true);
     try {
-      const response = await axios.post('/auth/register', {
+      const res = await axios.post('/auth/register', {
         email,
         password,
         name,
         background,
       });
+      const { token, user } = res.data;
 
-      const { token: newToken, user: userData } = response.data;
-      
-      const userObj: User = {
-        id: userData.id,
-        email: userData.email,
-        name: userData.name,
-        background: userData.background,
-        createdAt: new Date(userData.createdAt),
-      };
+      setToken(token);
+      setUser(user);
 
-      setToken(newToken);
-      setUser(userObj);
-      
-      localStorage.setItem('token', newToken);
-      localStorage.setItem('user', JSON.stringify(userObj));
-    } catch (error: unknown) {
-      console.error('Registration error:', error);
-      let message = 'Registration failed';
-      if (
-        error &&
-        typeof error === 'object' &&
-        'response' in error &&
-        error.response &&
-        typeof error.response === 'object' &&
-        'data' in error.response &&
-        error.response.data &&
-        typeof error.response.data === 'object' &&
-        'message' in error.response.data
-      ) {
-        message = (error.response as { data: { message?: string } }).data.message || message;
-      }
-      throw new Error(message);
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+    } catch (error) {
+      console.error('Registration failed', error);
+      throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Logout
   const logout = () => {
-    setUser(null);
     setToken(null);
+    setUser(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
   };
 
+  // Check for existing token on mount
+  useEffect(() => {
+    const savedToken = localStorage.getItem('token');
+    const savedUser = localStorage.getItem('user');
+
+    if (savedToken && savedUser) {
+      setToken(savedToken);
+      setUser(JSON.parse(savedUser));
+      verifyToken(savedToken);
+    } else {
+      setIsAuthLoading(false);
+    }
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, isLoading, token }}>
-      {children}
+    <AuthContext.Provider
+      value={{
+        user,
+        login,
+        register,
+        logout,
+        isLoading,
+        token,
+        isAuthLoading,
+      }}
+    >
+      {!isAuthLoading && children}
     </AuthContext.Provider>
   );
 };

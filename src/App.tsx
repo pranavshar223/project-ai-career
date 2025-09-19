@@ -9,12 +9,22 @@ import Jobs from './pages/Jobs';
 import Profile from './pages/Profile';
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth();
+  const { user, isAuthLoading } = useAuth(); // Get the isAuthLoading state
+
+  if (isAuthLoading) {
+    return <div>Loading...</div>; // Show a loading message
+  }
+
   return user ? <>{children}</> : <Navigate to="/auth" />;
 };
 
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth();
+  const { user, isAuthLoading } = useAuth(); // Get the isAuthLoading state
+
+  if (isAuthLoading) {
+    return <div>Loading...</div>; // Show a loading message
+  }
+
   return !user ? <>{children}</> : <Navigate to="/dashboard" />;
 };
 
@@ -71,15 +81,6 @@ const AppContent: React.FC = () => {
   );
 };
 
-// function App() {
-//   return (
-//     <AuthProvider>
-//       <Router>
-//         <AppContent />
-//       </Router>
-//     </AuthProvider>
-//   );
-// }
 function App() {
   return (
     <AuthProvider>
