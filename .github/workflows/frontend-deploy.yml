@@ -48,4 +48,4 @@ jobs:
 
     - name: Deploy to Cloud Storage
       run: |-
-        gsutil -m rsync -r dist/* ${{ env.BUCKET_NAME }}
+        gsutil -m rsync -r ./dist gs://[YOUR_BUCKET_NAME]
