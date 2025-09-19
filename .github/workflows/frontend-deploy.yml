@@ -13,7 +13,7 @@ on:
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  BUCKET_NAME: gs://[UNIQUE_BUCKET_NAME] # Replace with your bucket name
+  BUCKET_NAME: gs://ai-career-frontend-9e871 # Replace with your bucket name
 
 jobs:
   deploy:
