@@ -2,10 +2,14 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/ai-career-assistant', {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    // Use the MONGO_URI from the environment, with no extra options
+    const mongoURI = process.env.MONGO_URI;
+
+    if (!mongoURI) {
+      throw new Error('MONGO_URI is not defined in the environment');
+    }
+
+    const conn = await mongoose.connect(mongoURI);
 
     console.log(`📦 MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
