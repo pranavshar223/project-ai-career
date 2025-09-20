@@ -22,6 +22,12 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      # This step was missing
+      - name: Authenticate to Google Cloud
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -31,7 +37,8 @@ jobs:
       - name: Install Dependencies and Build
         run: |
           npm install
-          VITE_API_BASE_URL=$(gcloud run services describe my-backend-service --platform managed --region ${{ secrets.GCP_REGION }} --format 'value(status.url)')/api
+          # This gcloud command now includes the --project flag
+          VITE_API_BASE_URL=$(gcloud run services describe my-backend-service --platform managed --region ${{ secrets.GCP_REGION }} --project=${{ secrets.GCP_PROJECT_ID }} --format 'value(status.url)')/api
           echo "VITE_API_BASE_URL=${VITE_API_BASE_URL}" > .env.production
           npm run build
           
