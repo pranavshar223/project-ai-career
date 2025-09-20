@@ -31,6 +31,8 @@ jobs:
       - name: Install Dependencies and Build
         run: |
           npm install
+          VITE_API_BASE_URL=$(gcloud run services describe my-backend-service --platform managed --region ${{ secrets.GCP_REGION }} --format 'value(status.url)')/api
+          echo "VITE_API_BASE_URL=${VITE_API_BASE_URL}" > .env.production
           npm run build
           
       - name: Deploy to Firebase Hosting
