@@ -52,3 +52,4 @@ jobs:
           --platform managed \
           --allow-unauthenticated \
           --set-env-vars="VITE_API_BASE_URL=$BACKEND_URL" # Pass backend URL to frontend
+          --startup-timeout=300 # <-- ADD THIS LINE
