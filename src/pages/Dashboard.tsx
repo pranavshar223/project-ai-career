@@ -236,18 +236,23 @@ const Dashboard: React.FC = () => {
                 Quick Actions
               </h3>
               <div className="space-y-3">
+                 <Link to="/profile">
                 <button className="w-full text-left p-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">
                   <div className="font-medium text-blue-900">Update Skills</div>
                   <div className="text-sm text-blue-700">
                     Add new skills you've learned
                   </div>
                 </button>
+                </Link>
+                <Link to="/jobs">
                 <button className="w-full text-left p-3 bg-green-50 hover:bg-green-100 rounded-lg transition-colors">
                   <div className="font-medium text-green-900">Find Jobs</div>
                   <div className="text-sm text-green-700">
                     Browse matched opportunities
                   </div>
                 </button>
+                </Link>
+                <Link to="/chat">
                 <button className="w-full text-left p-3 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors">
                   <div className="font-medium text-purple-900">
                     Chat with AI
@@ -256,6 +261,7 @@ const Dashboard: React.FC = () => {
                     Get career guidance
                   </div>
                 </button>
+                </Link>
               </div>
             </div>
           </div>
