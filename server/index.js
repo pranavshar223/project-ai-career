@@ -10,8 +10,31 @@ const PORT = process.env.PORT || 5000;
 // Connect to database
 connectDB();
 
-// Middleware
-app.use(cors());
+// --- START: CORS Configuration ---
+// List of trusted URLs
+const whitelist = [
+  'http://localhost:5173',                         // For your local development
+  'https://ai-career-assistant-9e871.web.app',      // Your live Firebase URL
+  'https://ai-career-assistant-9e871.firebaseapp.com' // Alternative Firebase URL
+];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin || whitelist.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  }
+};
+
+// Use the configured CORS options
+app.use(cors(corsOptions));
+// --- END: CORS Configuration ---
+
+
+// Other Middleware
 app.use(express.json());
 
 // Basic route
