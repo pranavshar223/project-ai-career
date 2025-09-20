@@ -13,7 +13,7 @@ const __dirname = path.dirname(__filename);
 app.use(express.static(path.join(__dirname, 'dist')));
 
 // Handles any requests that don't match the ones above
-app.get('/*', (req, res) => {
+app.get('*', (req, res) => { // This line is now corrected
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
