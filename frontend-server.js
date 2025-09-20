@@ -1,22 +1,50 @@
-import express from 'express';
+import http from 'http';
+import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 
-const app = express();
 const port = process.env.PORT || 8080;
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const server = http.createServer((req, res) => {
+  // Get the file path from the request URL
+  let filePath = '.' + req.url;
+  if (filePath === './') {
+    filePath = './index.html';
+  }
 
-// This serves all the files in your 'dist' folder (CSS, JS, images)
-app.use(express.static(path.join(__dirname, 'dist')));
+  // All paths should resolve to the dist folder
+  const resolvedPath = path.resolve(path.join('dist', filePath));
 
-// This is the crucial part: For any other request, it sends the main index.html file.
-// This allows React Router to handle the URL.
-app.get('/*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  // Check if the file exists, otherwise serve index.html
+  fs.access(resolvedPath, fs.constants.F_OK, (err) => {
+    if (err) {
+      // File not found, serve index.html for SPA routing
+      fs.readFile(path.resolve(path.join('dist', 'index.html')), (err, content) => {
+        if (err) {
+          res.writeHead(500);
+          res.end('Server Error');
+        } else {
+          res.writeHead(200, { 'Content-Type': 'text/html' });
+          res.end(content, 'utf-8');
+        }
+      });
+    } else {
+      // File found, serve it
+      fs.readFile(resolvedPath, (err, content) => {
+        if (err) {
+          res.writeHead(500);
+          res.end('Server Error');
+        } else {
+          let contentType = 'text/html';
+          if (resolvedPath.endsWith('.js')) contentType = 'text/javascript';
+          if (resolvedPath.endsWith('.css')) contentType = 'text/css';
+          res.writeHead(200, { 'Content-Type': contentType });
+          res.end(content, 'utf-8');
+        }
+      });
+    }
+  });
 });
 
-app.listen(port, () => {
+server.listen(port, () => {
   console.log(`Frontend server listening on port ${port}`);
 });
