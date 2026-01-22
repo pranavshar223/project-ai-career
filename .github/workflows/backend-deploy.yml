@@ -2,11 +2,12 @@ name: Deploy Backend to Cloud Run
 
 on:
   push:
-    branches: [ "main" ] # Or your primary branch
+    branches: [ "main" ]
     paths:
-      - 'server/**'      # Only run this workflow if files in 'server/' change
+      - 'server/**'
       - 'package*.json'
       - '.github/workflows/backend-deploy.yml'
+  workflow_dispatch:  # <--- Added this to enable the "Run workflow" button
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
