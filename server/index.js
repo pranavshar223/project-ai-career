@@ -17,9 +17,8 @@ connectDB();
 // --- START: CORS Configuration ---
 const whitelist = [
   'http://localhost:5173',
-  'https://ai-career-assistant-9e871.web.app',
-  'https://ai-career-assistant-9e871.firebaseapp.com',
-  'https://my-frontend-service-1065077652018.asia-south1.run.app/'
+  'https://ai-career-assistant-v2.web.app',
+  'https://ai-career-assistant-v2.firebaseapp.com/',
 ];
 
 const corsOptions = {
