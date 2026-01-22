@@ -13,7 +13,7 @@ env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   GAR_LOCATION: ${{ secrets.GCP_REGION }}
   SERVICE_NAME: my-backend-service
-  REPOSITORY: my-project-repo
+  REPOSITORY: my-repo
 
 jobs:
   deploy:
