@@ -253,3 +253,5 @@ userSchema.methods.updateStreak = function() {
 };
 
 module.exports = mongoose.model('User', userSchema);
+// Useful for leaderboard or engagement analytics
+userSchema.index({ 'streak.longest': -1, 'analytics.engagementScore': -1 });
