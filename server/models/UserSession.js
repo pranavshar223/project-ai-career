@@ -9,7 +9,7 @@ const userSessionSchema = new mongoose.Schema({
   sessionId: {
     type: String,
     required: true,
-    unique: true
+    unique: true // Mongoose automatically creates an index here
   },
   startTime: {
     type: Date,
@@ -54,7 +54,7 @@ const userSessionSchema = new mongoose.Schema({
 
 // Index for efficient queries
 userSessionSchema.index({ userId: 1, startTime: -1 });
-userSessionSchema.index({ sessionId: 1 });
+// REMOED: userSessionSchema.index({ sessionId: 1 }); // This was the duplicate
 userSessionSchema.index({ isActive: 1, startTime: -1 });
 
 // Calculate session duration before saving
