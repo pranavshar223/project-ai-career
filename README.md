@@ -80,7 +80,7 @@ PORT=5000
 FRONTEND_URL=http://localhost:5173
 
 # Database
-MONGODB_URI=mongodb://localhost:27017/ai-career-assistant
+MONGO_URI=mongodb://localhost:27017/ai-career-assistant
 
 # Auth
 JWT_SECRET=your-secret-key
