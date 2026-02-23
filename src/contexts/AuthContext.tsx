@@ -3,7 +3,7 @@ import axios from 'axios';
 import { User } from '../types';
 
 // IMPORTANT: Make sure this line is uncommented for production
-const API_BASE_URL =  'https://my-backend-service-995199928922.asia-south1.run.app/api';
+const API_BASE_URL =  'http://localhost:5000/api' // Change to your backend URL in production
 
 axios.defaults.baseURL = API_BASE_URL;
 

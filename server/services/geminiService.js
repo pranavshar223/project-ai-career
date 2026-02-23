@@ -3,7 +3,7 @@ const axios = require('axios');
 class GeminiService {
   constructor() {
     this.apiKey = process.env.GEMINI_API_KEY;
-    this.apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent';
+    this.apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent';;
     this.maxRetries = 3;
     this.retryDelay = 1000;
   }
@@ -82,16 +82,20 @@ class GeminiService {
         };
 
       } catch (error) {
-        console.error(`Gemini API attempt ${attempt} failed:`, error.response?.data || error.message);
-        
-        if (attempt === this.maxRetries) {
-          console.warn('All Gemini API attempts failed, falling back to enhanced mock response');
-          return this.generateEnhancedMockResponse(userMessage, context);
-        }
-        
-        // Wait before retrying
-        await new Promise(resolve => setTimeout(resolve, this.retryDelay * attempt));
-      }
+    console.error(`Gemini API attempt ${attempt} failed:`, error.message);
+    
+    // 1. If we have tried 3 times, give up and return the mock
+    if (attempt === this.maxRetries) {
+        console.warn('All attempts failed, returning mock response.');
+        return this.generateEnhancedMockResponse(userMessage, context);
+    }
+    
+    // 2. SUCCESSFUL FIX: Move the delay HERE
+    // This runs after Attempt 1 and Attempt 2 to wait before trying again
+    const delay = this.retryDelay * Math.pow(2, attempt - 1);
+    console.log(`Rate limited. Waiting ${delay}ms before next attempt...`);
+    await new Promise(resolve => setTimeout(resolve, delay));
+}
     }
   }
 
@@ -120,41 +124,41 @@ Session Context:
 `;
 
     if (chatHistory.length > 0) {
-      prompt += `Recent Conversation History:\n`;
-      chatHistory.slice(-5).forEach((msg, index) => {
-        const role = msg.role === 'user' ? 'User' : 'Assistant';
-        prompt += `${role}: ${msg.content.substring(0, 200)}${msg.content.length > 200 ? '...' : ''}\n`;
-      });
-      prompt += '\n';
+        prompt += `Recent Conversation History:\n`;
+        // Optimization: Removed truncation to allow full context
+        chatHistory.slice(-5).forEach((msg) => {
+            const role = msg.role === 'user' ? 'User' : 'Assistant';
+            prompt += `${role}: ${msg.content}\n`;
+        });
+        prompt += '\n';
     }
 
     prompt += `Current User Message: "${userMessage}"
 
 RESPONSE GUIDELINES:
-1. PERSONALIZATION: Tailor advice based on user's background, skills, and goals
-2. ACTIONABILITY: Provide specific, actionable steps and recommendations
-3. STRUCTURE: Use clear formatting with headers, bullet points, and sections
-4. RESOURCES: Include relevant learning resources, tools, and platforms
-5. MOTIVATION: Be encouraging and supportive while being realistic
-6. FOLLOW-UP: Ask relevant questions to better understand user needs
+1. PERSONALIZATION: Tailor advice based on user's background, skills, and goals.
+2. ACTIONABILITY: Provide specific, actionable steps and recommendations.
+3. STRUCTURE: Use clear formatting with headers and bullet points.
+4. MOTIVATION: Be encouraging and supportive while being realistic.
 
-RESPONSE CATEGORIES:
-- Skill Development: Learning paths, courses, certifications
-- Career Planning: Role transitions, industry insights, salary expectations
-- Job Search: Application strategies, interview prep, networking
-- Portfolio Building: Project ideas, showcase strategies
-- Industry Trends: Market analysis, emerging technologies
-
-FORMAT YOUR RESPONSE:
-- Use markdown formatting for better readability
-- Include specific examples and case studies when relevant
-- Provide timeline estimates for recommendations
-- Suggest measurable milestones and progress tracking
+STRICT OUTPUT FORMAT:
+Your entire response must be a single JSON object. Do not include any text before or after the JSON.
+Schema:
+{
+  "advice": "Your detailed career guidance in markdown format.",
+  "metadata": {
+    "detectedSkills": ["List only new skills mentioned in the current user message"],
+    "suggestedGoals": ["New career goals identified from user message"],
+    "intent": "skill_development | job_search | interview_prep | general",
+    "actionItems": ["Short 3-5 word tasks for the user to do next"],
+    "sentiment": "positive | neutral | negative"
+  }
+}
 
 Remember: Focus on practical, implementable advice that moves the user closer to their career goals.`;
 
     return prompt;
-  }
+}
 
   /**
    * Enhanced metadata extraction with better skill and goal detection
