@@ -1,9 +1,10 @@
-const axios = require('axios');
+const axios = require("axios");
 
 class GeminiService {
   constructor() {
     this.apiKey = process.env.GEMINI_API_KEY;
-    this.apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent';;
+    this.apiUrl =
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent";
     this.maxRetries = 3;
     this.retryDelay = 1000;
   }
@@ -33,24 +34,14 @@ class GeminiService {
               topP: 0.95,
               maxOutputTokens: 2048,
               candidateCount: 1,
+              // Force the model to output valid JSON
+              responseMimeType: "application/json", 
             },
             safetySettings: [
-              {
-                category: "HARM_CATEGORY_HARASSMENT",
-                threshold: "BLOCK_MEDIUM_AND_ABOVE"
-              },
-              {
-                category: "HARM_CATEGORY_HATE_SPEECH",
-                threshold: "BLOCK_MEDIUM_AND_ABOVE"
-              },
-              {
-                category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                threshold: "BLOCK_MEDIUM_AND_ABOVE"
-              },
-              {
-                category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-                threshold: "BLOCK_MEDIUM_AND_ABOVE"
-              }
+              { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+              { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+              { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+              { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" }
             ]
           },
           {
@@ -63,39 +54,52 @@ class GeminiService {
         );
 
         const candidate = apiResponse.data.candidates?.[0];
-        if (!candidate || !candidate.content?.parts?.[0]?.text) {
+        const aiRawText = candidate?.content?.parts?.[0]?.text;
+
+        if (!aiRawText) {
           throw new Error('Invalid response structure from Gemini API');
         }
 
-        const aiText = candidate.content.parts[0].text;
-        const metadata = this.extractEnhancedMetadata(userMessage, aiText, context);
+        try {
+          // Parse the AI's stringified JSON response
+          const parsedData = JSON.parse(aiRawText);
 
-        return {
-          content: this.formatResponse(aiText),
-          metadata,
-          tokens: {
-            input: this.estimateTokens(prompt),
-            output: this.estimateTokens(aiText)
-          },
-          confidence: this.calculateConfidence(candidate),
-          source: 'gemini-api'
-        };
+          return {
+            content: this.formatResponse(parsedData.advice),
+            metadata: {
+              ...parsedData.metadata,
+              source: 'gemini-api-json'
+            },
+            tokens: {
+              input: this.estimateTokens(prompt),
+              output: this.estimateTokens(aiRawText)
+            },
+            confidence: this.calculateConfidence(candidate),
+            source: 'gemini-api'
+          };
+        } catch (parseError) {
+          console.error("JSON Parse Error. Raw text received:", aiRawText);
+          // Fallback if the AI fails to output valid JSON
+          return {
+            content: this.formatResponse(aiRawText),
+            metadata: { intent: 'general_guidance', source: 'gemini-api-fallback' },
+            source: 'gemini-api'
+          };
+        }
 
       } catch (error) {
-    console.error(`Gemini API attempt ${attempt} failed:`, error.message);
-    
-    // 1. If we have tried 3 times, give up and return the mock
-    if (attempt === this.maxRetries) {
-        console.warn('All attempts failed, returning mock response.');
-        return this.generateEnhancedMockResponse(userMessage, context);
-    }
-    
-    // 2. SUCCESSFUL FIX: Move the delay HERE
-    // This runs after Attempt 1 and Attempt 2 to wait before trying again
-    const delay = this.retryDelay * Math.pow(2, attempt - 1);
-    console.log(`Rate limited. Waiting ${delay}ms before next attempt...`);
-    await new Promise(resolve => setTimeout(resolve, delay));
-}
+        console.error(`Gemini API attempt ${attempt} failed:`, error.message);
+        
+        if (attempt === this.maxRetries) {
+          console.warn('All attempts failed, returning mock response.');
+          return this.generateEnhancedMockResponse(userMessage, context);
+        }
+        
+        // Exponential backoff logic between attempts
+        const delay = this.retryDelay * Math.pow(2, attempt - 1);
+        console.log(`Rate limited. Waiting ${delay}ms before next attempt...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
     }
   }
 
@@ -109,28 +113,28 @@ class GeminiService {
 
 CONTEXT ANALYSIS:
 User Profile:
-- Background: ${userProfile.background || 'Not specified'}
-- Experience Level: ${userProfile.profile?.experience || 'Not specified'}
+- Background: ${userProfile.background || "Not specified"}
+- Experience Level: ${userProfile.profile?.experience || "Not specified"}
 - Current Skills: ${this.formatSkills(userProfile.skills)}
 - Career Goals: ${this.formatGoals(userProfile.careerGoals)}
-- Location Preference: ${userProfile.preferences?.jobLocation || 'Not specified'}
-- Job Type Preference: ${userProfile.preferences?.jobType || 'Not specified'}
+- Location Preference: ${userProfile.preferences?.jobLocation || "Not specified"}
+- Job Type Preference: ${userProfile.preferences?.jobType || "Not specified"}
 
 Session Context:
-- Previous Topics: ${sessionContext.topics?.join(', ') || 'None'}
-- User Intent: ${sessionContext.intent || 'General inquiry'}
-- Conversation Stage: ${sessionContext.stage || 'Initial'}
+- Previous Topics: ${sessionContext.topics?.join(", ") || "None"}
+- User Intent: ${sessionContext.intent || "General inquiry"}
+- Conversation Stage: ${sessionContext.stage || "Initial"}
 
 `;
 
     if (chatHistory.length > 0) {
-        prompt += `Recent Conversation History:\n`;
-        // Optimization: Removed truncation to allow full context
-        chatHistory.slice(-5).forEach((msg) => {
-            const role = msg.role === 'user' ? 'User' : 'Assistant';
-            prompt += `${role}: ${msg.content}\n`;
-        });
-        prompt += '\n';
+      prompt += `Recent Conversation History:\n`;
+      // Optimization: Removed truncation to allow full context
+      chatHistory.slice(-5).forEach((msg) => {
+        const role = msg.role === "user" ? "User" : "Assistant";
+        prompt += `${role}: ${msg.content}\n`;
+      });
+      prompt += "\n";
     }
 
     prompt += `Current User Message: "${userMessage}"
@@ -158,7 +162,7 @@ Schema:
 Remember: Focus on practical, implementable advice that moves the user closer to their career goals.`;
 
     return prompt;
-}
+  }
 
   /**
    * Enhanced metadata extraction with better skill and goal detection
@@ -169,29 +173,87 @@ Remember: Focus on practical, implementable advice that moves the user closer to
       extractedGoals: [],
       extractedTools: [],
       extractedCertifications: [],
-      sentiment: 'neutral',
+      sentiment: "neutral",
       confidence: 0.8,
       intent: this.detectIntent(userMessage),
       topics: this.extractTopics(userMessage, aiResponse),
       actionItems: this.extractActionItems(aiResponse),
       urgency: this.detectUrgency(userMessage),
-      experienceLevel: this.detectExperienceLevel(userMessage, context.userProfile)
+      experienceLevel: this.detectExperienceLevel(
+        userMessage,
+        context.userProfile,
+      ),
     };
 
-    const combinedText = (userMessage + ' ' + aiResponse).toLowerCase();
+    const combinedText = (userMessage + " " + aiResponse).toLowerCase();
 
     // Enhanced skill detection with categories
     const skillCategories = {
-      programming: ['python', 'javascript', 'java', 'c++', 'go', 'rust', 'typescript', 'php', 'ruby', 'swift', 'kotlin'],
-      webdev: ['react', 'vue', 'angular', 'node.js', 'express', 'next.js', 'svelte', 'html', 'css', 'sass'],
-      datascience: ['machine learning', 'data science', 'pandas', 'numpy', 'matplotlib', 'scikit-learn', 'tensorflow', 'pytorch'],
-      cloud: ['aws', 'azure', 'google cloud', 'docker', 'kubernetes', 'terraform', 'serverless'],
-      databases: ['sql', 'postgresql', 'mongodb', 'mysql', 'redis', 'elasticsearch'],
-      tools: ['git', 'jira', 'figma', 'tableau', 'power bi', 'jenkins', 'github actions']
+      programming: [
+        "python",
+        "javascript",
+        "java",
+        "c++",
+        "go",
+        "rust",
+        "typescript",
+        "php",
+        "ruby",
+        "swift",
+        "kotlin",
+      ],
+      webdev: [
+        "react",
+        "vue",
+        "angular",
+        "node.js",
+        "express",
+        "next.js",
+        "svelte",
+        "html",
+        "css",
+        "sass",
+      ],
+      datascience: [
+        "machine learning",
+        "data science",
+        "pandas",
+        "numpy",
+        "matplotlib",
+        "scikit-learn",
+        "tensorflow",
+        "pytorch",
+      ],
+      cloud: [
+        "aws",
+        "azure",
+        "google cloud",
+        "docker",
+        "kubernetes",
+        "terraform",
+        "serverless",
+      ],
+      databases: [
+        "sql",
+        "postgresql",
+        "mongodb",
+        "mysql",
+        "redis",
+        "elasticsearch",
+      ],
+      tools: [
+        "git",
+        "jira",
+        "figma",
+        "tableau",
+        "power bi",
+        "jenkins",
+        "github actions",
+      ],
     };
 
     Object.entries(skillCategories).forEach(([category, skills]) => {
-      skills.forEach(skill => {
+      skills.forEach((skill) => {
         if (combinedText.includes(skill)) {
           metadata.extractedSkills.push({ name: skill, category });
         }
@@ -203,10 +265,10 @@ Remember: Focus on practical, implementable advice that moves the user closer to
       /become\s+(?:a\s+)?(.+?)(?:\s|$|,|\.|!|\?)/gi,
       /want\s+to\s+(?:be\s+)?(.+?)(?:\s|$|,|\.|!|\?)/gi,
       /transition\s+(?:to\s+|into\s+)(.+?)(?:\s|$|,|\.|!|\?)/gi,
-      /career\s+in\s+(.+?)(?:\s|$|,|\.|!|\?)/gi
+      /career\s+in\s+(.+?)(?:\s|$|,|\.|!|\?)/gi,
     ];
 
-    goalPatterns.forEach(pattern => {
+    goalPatterns.forEach((pattern) => {
       let match;
       while ((match = pattern.exec(userMessage)) !== null) {
         const goal = match[1].trim();
@@ -217,28 +279,64 @@ Remember: Focus on practical, implementable advice that moves the user closer to
     });
 
     // Extract certifications
-    const certificationKeywords = ['certification', 'certificate', 'certified', 'aws certified', 'google certified', 'microsoft certified'];
-    certificationKeywords.forEach(cert => {
+    const certificationKeywords = [
+      "certification",
+      "certificate",
+      "certified",
+      "aws certified",
+      "google certified",
+      "microsoft certified",
+    ];
+    certificationKeywords.forEach((cert) => {
       if (combinedText.includes(cert)) {
         metadata.extractedCertifications.push(cert);
       }
     });
 
     // Sentiment analysis
-    const positiveWords = ['excited', 'interested', 'passionate', 'love', 'enjoy', 'motivated', 'eager'];
-    const negativeWords = ['struggling', 'difficult', 'confused', 'stuck', 'frustrated', 'overwhelmed', 'lost'];
-    const neutralWords = ['help', 'advice', 'guidance', 'information', 'learn', 'understand'];
+    const positiveWords = [
+      "excited",
+      "interested",
+      "passionate",
+      "love",
+      "enjoy",
+      "motivated",
+      "eager",
+    ];
+    const negativeWords = [
+      "struggling",
+      "difficult",
+      "confused",
+      "stuck",
+      "frustrated",
+      "overwhelmed",
+      "lost",
+    ];
+    const neutralWords = [
+      "help",
+      "advice",
+      "guidance",
+      "information",
+      "learn",
+      "understand",
+    ];
 
-    const positiveCount = positiveWords.filter(word => combinedText.includes(word)).length;
-    const negativeCount = negativeWords.filter(word => combinedText.includes(word)).length;
-    const neutralCount = neutralWords.filter(word => combinedText.includes(word)).length;
+    const positiveCount = positiveWords.filter((word) =>
+      combinedText.includes(word),
+    ).length;
+    const negativeCount = negativeWords.filter((word) =>
+      combinedText.includes(word),
+    ).length;
+    const neutralCount = neutralWords.filter((word) =>
+      combinedText.includes(word),
+    ).length;
 
     if (positiveCount > negativeCount && positiveCount > 0) {
-      metadata.sentiment = 'positive';
+      metadata.sentiment = "positive";
     } else if (negativeCount > positiveCount && negativeCount > 0) {
-      metadata.sentiment = 'negative';
+      metadata.sentiment = "negative";
     } else if (neutralCount > 0) {
-      metadata.sentiment = 'neutral';
+      metadata.sentiment = "neutral";
     }
 
     return metadata;
@@ -249,15 +347,33 @@ Remember: Focus on practical, implementable advice that moves the user closer to
    */
   detectIntent(message) {
     const lowerMessage = message.toLowerCase();
-    
-    if (lowerMessage.includes('roadmap') || lowerMessage.includes('learning path')) return 'roadmap_request';
-    if (lowerMessage.includes('job') || lowerMessage.includes('career opportunity')) return 'job_search';
-    if (lowerMessage.includes('skill') || lowerMessage.includes('learn')) return 'skill_development';
-    if (lowerMessage.includes('interview') || lowerMessage.includes('preparation')) return 'interview_prep';
-    if (lowerMessage.includes('salary') || lowerMessage.includes('compensation')) return 'salary_inquiry';
-    if (lowerMessage.includes('transition') || lowerMessage.includes('switch')) return 'career_transition';
-    
-    return 'general_guidance';
+
+    if (
+      lowerMessage.includes("roadmap") ||
+      lowerMessage.includes("learning path")
+    )
+      return "roadmap_request";
+    if (
+      lowerMessage.includes("job") ||
+      lowerMessage.includes("career opportunity")
+    )
+      return "job_search";
+    if (lowerMessage.includes("skill") || lowerMessage.includes("learn"))
+      return "skill_development";
+    if (
+      lowerMessage.includes("interview") ||
+      lowerMessage.includes("preparation")
+    )
+      return "interview_prep";
+    if (
+      lowerMessage.includes("salary") ||
+      lowerMessage.includes("compensation")
+    )
+      return "salary_inquiry";
+    if (lowerMessage.includes("transition") || lowerMessage.includes("switch"))
+      return "career_transition";
+
+    return "general_guidance";
   }
 
   /**
@@ -266,18 +382,28 @@ Remember: Focus on practical, implementable advice that moves the user closer to
   extractTopics(userMessage, aiResponse) {
     const topics = [];
     const topicKeywords = {
-      'Data Science': ['data science', 'machine learning', 'analytics', 'statistics'],
-      'Web Development': ['web development', 'frontend', 'backend', 'full stack'],
-      'Cloud Computing': ['cloud', 'aws', 'azure', 'devops'],
-      'Mobile Development': ['mobile', 'ios', 'android', 'react native'],
-      'Career Planning': ['career', 'job search', 'interview', 'resume'],
-      'Skills Development': ['skills', 'learning', 'certification', 'course']
+      "Data Science": [
+        "data science",
+        "machine learning",
+        "analytics",
+        "statistics",
+      ],
+      "Web Development": [
+        "web development",
+        "frontend",
+        "backend",
+        "full stack",
+      ],
+      "Cloud Computing": ["cloud", "aws", "azure", "devops"],
+      "Mobile Development": ["mobile", "ios", "android", "react native"],
+      "Career Planning": ["career", "job search", "interview", "resume"],
+      "Skills Development": ["skills", "learning", "certification", "course"],
     };
 
-    const combinedText = (userMessage + ' ' + aiResponse).toLowerCase();
-    
+    const combinedText = (userMessage + " " + aiResponse).toLowerCase();
+
     Object.entries(topicKeywords).forEach(([topic, keywords]) => {
-      if (keywords.some(keyword => combinedText.includes(keyword))) {
+      if (keywords.some((keyword) => combinedText.includes(keyword))) {
         topics.push(topic);
       }
     });
@@ -293,10 +419,10 @@ Remember: Focus on practical, implementable advice that moves the user closer to
     const actionPatterns = [
       /(?:^|\n)[-*]\s*(.+?)(?:\n|$)/g,
       /(?:^|\n)\d+\.\s*(.+?)(?:\n|$)/g,
-      /(?:start|begin|learn|practice|build|create|apply|study)\s+(.+?)(?:\.|,|\n|$)/gi
+      /(?:start|begin|learn|practice|build|create|apply|study)\s+(.+?)(?:\.|,|\n|$)/gi,
     ];
 
-    actionPatterns.forEach(pattern => {
+    actionPatterns.forEach((pattern) => {
       let match;
       while ((match = pattern.exec(response)) !== null) {
         const action = match[1].trim();
@@ -313,12 +439,20 @@ Remember: Focus on practical, implementable advice that moves the user closer to
    * Detect urgency level from user message
    */
   detectUrgency(message) {
-    const urgentWords = ['urgent', 'asap', 'immediately', 'quickly', 'soon', 'deadline'];
+    const urgentWords = [
+      "urgent",
+      "asap",
+      "immediately",
+      "quickly",
+      "soon",
+      "deadline",
+    ];
     const lowerMessage = message.toLowerCase();
-    
-    if (urgentWords.some(word => lowerMessage.includes(word))) return 'high';
-    if (lowerMessage.includes('when') || lowerMessage.includes('how long')) return 'medium';
-    return 'low';
+
+    if (urgentWords.some((word) => lowerMessage.includes(word))) return "high";
+    if (lowerMessage.includes("when") || lowerMessage.includes("how long"))
+      return "medium";
+    return "low";
   }
 
   /**
@@ -326,19 +460,27 @@ Remember: Focus on practical, implementable advice that moves the user closer to
    */
   detectExperienceLevel(message, userProfile) {
     const lowerMessage = message.toLowerCase();
-    
+
     if (userProfile?.profile?.experience) {
       return userProfile.profile.experience;
     }
-    
-    if (lowerMessage.includes('beginner') || lowerMessage.includes('new to') || lowerMessage.includes('just started')) {
-      return 'beginner';
+
+    if (
+      lowerMessage.includes("beginner") ||
+      lowerMessage.includes("new to") ||
+      lowerMessage.includes("just started")
+    ) {
+      return "beginner";
     }
-    if (lowerMessage.includes('experienced') || lowerMessage.includes('senior') || lowerMessage.includes('advanced')) {
-      return 'advanced';
+    if (
+      lowerMessage.includes("experienced") ||
+      lowerMessage.includes("senior") ||
+      lowerMessage.includes("advanced")
+    ) {
+      return "advanced";
     }
-    
-    return 'intermediate';
+
+    return "intermediate";
   }
 
   /**
@@ -347,8 +489,8 @@ Remember: Focus on practical, implementable advice that moves the user closer to
   formatResponse(response) {
     // Clean up the response and ensure proper formatting
     return response
-      .replace(/\*\*(.*?)\*\*/g, '**$1**') // Ensure bold formatting
-      .replace(/\n{3,}/g, '\n\n') // Remove excessive line breaks
+      .replace(/\*\*(.*?)\*\*/g, "**$1**") // Ensure bold formatting
+      .replace(/\n{3,}/g, "\n\n") // Remove excessive line breaks
       .trim();
   }
 
@@ -358,11 +500,16 @@ Remember: Focus on practical, implementable advice that moves the user closer to
   calculateConfidence(candidate) {
     // Basic confidence calculation based on response quality indicators
     let confidence = 0.8;
-    
-    if (candidate.finishReason === 'STOP') confidence += 0.1;
+
+    if (candidate.finishReason === "STOP") confidence += 0.1;
     if (candidate.content?.parts?.[0]?.text?.length > 100) confidence += 0.05;
-    if (candidate.safetyRatings?.every(rating => rating.probability === 'NEGLIGIBLE')) confidence += 0.05;
-    
+    if (
+      candidate.safetyRatings?.every(
+        (rating) => rating.probability === "NEGLIGIBLE",
+      )
+    )
+      confidence += 0.05;
+
     return Math.min(confidence, 1.0);
   }
 
@@ -373,48 +520,61 @@ Remember: Focus on practical, implementable advice that moves the user closer to
     const lowerMessage = userMessage.toLowerCase();
     const userProfile = context.userProfile || {};
     const intent = this.detectIntent(userMessage);
-    
-    let response = '';
+
+    let response = "";
 
     switch (intent) {
-      case 'roadmap_request':
+      case "roadmap_request":
         response = this.generateRoadmapResponse(userMessage, userProfile);
         break;
-      case 'job_search':
+      case "job_search":
         response = this.generateJobSearchResponse(userMessage, userProfile);
         break;
-      case 'skill_development':
-        response = this.generateSkillDevelopmentResponse(userMessage, userProfile);
+      case "skill_development":
+        response = this.generateSkillDevelopmentResponse(
+          userMessage,
+          userProfile,
+        );
         break;
-      case 'interview_prep':
+      case "interview_prep":
         response = this.generateInterviewPrepResponse(userMessage, userProfile);
         break;
-      case 'salary_inquiry':
+      case "salary_inquiry":
         response = this.generateSalaryResponse(userMessage, userProfile);
         break;
-      case 'career_transition':
-        response = this.generateCareerTransitionResponse(userMessage, userProfile);
+      case "career_transition":
+        response = this.generateCareerTransitionResponse(
+          userMessage,
+          userProfile,
+        );
         break;
       default:
-        response = this.generateGeneralGuidanceResponse(userMessage, userProfile);
+        response = this.generateGeneralGuidanceResponse(
+          userMessage,
+          userProfile,
+        );
     }
 
-    const metadata = this.extractEnhancedMetadata(userMessage, response, context);
+    const metadata = this.extractEnhancedMetadata(
+      userMessage,
+      response,
+      context,
+    );
 
     return {
       content: response,
       metadata,
       tokens: {
         input: this.estimateTokens(userMessage),
-        output: this.estimateTokens(response)
+        output: this.estimateTokens(response),
       },
       confidence: 0.85,
-      source: 'enhanced-mock'
+      source: "enhanced-mock",
     };
   }
 
   generateRoadmapResponse(userMessage, userProfile) {
-    const experience = userProfile.profile?.experience || 'beginner';
+    const experience = userProfile.profile?.experience || "beginner";
     return `# 🗺️ Personalized Career Roadmap
 
 Based on your message and profile, here's a structured learning path:
@@ -671,13 +831,13 @@ What would you like to focus on today?`;
    * Helper methods for formatting
    */
   formatSkills(skills) {
-    if (!skills || skills.length === 0) return 'None specified';
-    return skills.map(s => `${s.name} (${s.level})`).join(', ');
+    if (!skills || skills.length === 0) return "None specified";
+    return skills.map((s) => `${s.name} (${s.level})`).join(", ");
   }
 
   formatGoals(goals) {
-    if (!goals || goals.length === 0) return 'None specified';
-    return goals.map(g => g.title).join(', ');
+    if (!goals || goals.length === 0) return "None specified";
+    return goals.map((g) => g.title).join(", ");
   }
 
   /**
