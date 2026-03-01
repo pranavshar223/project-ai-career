@@ -4,7 +4,7 @@ const Roadmap = require('../models/Roadmap');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
 const geminiService = require('../services/geminiService');
-const mongoose = require('mongoose');
+
 const router = express.Router();
 
 // @route   POST /api/roadmaps/generate
@@ -37,41 +37,26 @@ router.post('/generate', auth, [
     const { careerGoal, targetRole, timeframe = '6-months' } = req.body;
     const userId = req.user._id;
 
+    // Get user profile for context
     const user = await User.findById(userId);
 
-    // Generate roadmap
-    let roadmapData = await generateRoadmapWithAI(careerGoal, {
+    // Generate roadmap using AI
+    const roadmapData = await generateRoadmapWithAI(careerGoal, {
       userProfile: user,
       targetRole,
       timeframe
     });
 
-    if (!roadmapData || !Array.isArray(roadmapData.items)) {
-      throw new Error('Invalid roadmap structure from AI');
-    }
-
-    // ✅ Normalize items to guarantee schema compatibility
-    const normalizedItems = roadmapData.items.map((item, index) => ({
-      title: item.title || `Step ${index + 1}`,
-      description: item.description || item.title || '',
-      type: item.type || 'skill',
-      duration: item.duration || '',
-      priority: item.priority || 'medium',
-      order: item.order ?? index + 1,
-      skills: item.skills || [],
-      estimatedHours: item.estimatedHours || 0,
-      resources: item.resources || []
-    }));
-
+    // Create roadmap in database
     const roadmap = new Roadmap({
       userId,
-      title: roadmapData.title || `Roadmap for ${careerGoal}`,
-      description: roadmapData.description || '',
-      careerGoal: careerGoal, // ✅ always ensure required field
+      title: roadmapData.title,
+      description: roadmapData.description,
+      careerGoal,
       targetRole: targetRole || careerGoal,
-      items: normalizedItems,
-      totalEstimatedDuration: roadmapData.totalEstimatedDuration || '',
-      difficulty: roadmapData.difficulty || 'intermediate'
+      items: roadmapData.items,
+      totalEstimatedDuration: roadmapData.totalEstimatedDuration,
+      difficulty: roadmapData.difficulty
     });
 
     await roadmap.save();
@@ -91,15 +76,11 @@ router.post('/generate', auth, [
         createdAt: roadmap.createdAt
       }
     });
-
   } catch (error) {
     console.error('Generate roadmap error:', error);
-
     res.status(500).json({
       message: 'Error generating roadmap',
-      error: process.env.NODE_ENV === 'development'
-        ? error.message
-        : undefined
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
@@ -111,16 +92,10 @@ router.get('/', auth, async (req, res) => {
   try {
     const { page = 1, limit = 10, active = true } = req.query;
 
-    const query = {
-  userId: new mongoose.Types.ObjectId(req.user._id)
-};
-
-if (active === 'true') {
-  query.isActive = true;
-} else if (active === 'false') {
-  query.isActive = false;
-}
-// if active=all → no filter
+    const query = { userId: req.user._id };
+    if (active !== 'all') {
+      query.isActive = active === 'true';
+    }
 
     const roadmaps = await Roadmap.find(query)
       .sort({ createdAt: -1 })
@@ -136,7 +111,6 @@ if (active === 'true') {
         description: roadmap.description,
         careerGoal: roadmap.careerGoal,
         targetRole: roadmap.targetRole,
-        items: roadmap.items, 
         progress: roadmap.progress,
         difficulty: roadmap.difficulty,
         totalEstimatedDuration: roadmap.totalEstimatedDuration,
