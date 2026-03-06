@@ -14,17 +14,67 @@ const roadmapItemSchema = new mongoose.Schema({
     enum: ['skill', 'project', 'certification', 'course'],
     required: true
   },
+
+  // --- PHASE & WEEK STRUCTURE ---
+  phase: {
+    type: String,
+    enum: ['foundation', 'development', 'advanced', 'professional'],
+    default: 'foundation'
+  },
+  weekNumber: {
+    type: Number,
+    default: 1
+  },
+
+  // --- SCHEDULING (needed for missed task detection) ---
+  dueDate: {
+    type: Date,
+    default: null
+  },
+  scheduledStartDate: {
+    type: Date,
+    default: null
+  },
+
+  // --- STATUS (replaces simple boolean) ---
+  status: {
+    type: String,
+    enum: ['pending', 'in_progress', 'completed', 'missed', 'skipped'],
+    default: 'pending'
+  },
+
+  // Keep completed + completedAt for backward compat
+  completed: {
+    type: Boolean,
+    default: false
+  },
+  completedAt: Date,
+  missedAt: Date,
+
+  // --- DEPENDENCY (for "next task related to completed task") ---
+  dependsOn: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: null
+  },
+
+  // --- AI ADAPTATION TRACKING ---
+  isAdapted: {
+    type: Boolean,
+    default: false
+  },
+  adaptedReason: {
+    type: String,
+    enum: ['missed_previous', 'completed_early', 'user_request', 'skill_gap', null],
+    default: null
+  },
+  originalOrder: Number,
+
   duration: String,
   priority: {
     type: String,
     enum: ['high', 'medium', 'low'],
     default: 'medium'
   },
-  completed: {
-    type: Boolean,
-    default: false
-  },
-  completedAt: Date,
   order: {
     type: Number,
     required: true
@@ -65,19 +115,18 @@ const roadmapSchema = new mongoose.Schema({
     default: 'intermediate'
   },
   progress: {
-    completed: {
-      type: Number,
-      default: 0
-    },
-    total: {
-      type: Number,
-      default: 0
-    },
-    percentage: {
-      type: Number,
-      default: 0
-    }
+    completed: { type: Number, default: 0 },
+    total: { type: Number, default: 0 },
+    percentage: { type: Number, default: 0 },
+    missed: { type: Number, default: 0 }
   },
+
+  // Track last time AI adapted this roadmap
+  lastAdaptedAt: {
+    type: Date,
+    default: null
+  },
+
   isActive: {
     type: Boolean,
     default: true
@@ -94,16 +143,33 @@ const roadmapSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Calculate progress before saving
-roadmapSchema.pre('save', function(next) {
-  const completed = this.items.filter(item => item.completed).length;
+// Auto-calculate progress + detect missed tasks before saving
+roadmapSchema.pre('save', function (next) {
+  const now = new Date();
+
+  // Auto-mark items as missed if dueDate passed and not completed
+  this.items.forEach(item => {
+    if (
+      item.dueDate &&
+      item.dueDate < now &&
+      item.status === 'pending' &&
+      !item.completed
+    ) {
+      item.status = 'missed';
+      item.missedAt = now;
+    }
+  });
+
+  const completed = this.items.filter(i => i.completed).length;
+  const missed = this.items.filter(i => i.status === 'missed').length;
   const total = this.items.length;
-  
+
   this.progress.completed = completed;
   this.progress.total = total;
+  this.progress.missed = missed;
   this.progress.percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
-  this.lastUpdated = new Date();
-  
+  this.lastUpdated = now;
+
   next();
 });
 

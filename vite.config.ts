@@ -3,7 +3,6 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  // Manually defining the entry point to stop the yellow warning
   optimizeDeps: {
     entries: ['index.html'],
     exclude: ['lucide-react'],
@@ -11,9 +10,16 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
-    // This helps if there are permission issues in Windows/VS Code
     watch: {
       usePolling: true,
     },
+    // ✅ Proxy all /api requests to your backend
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
   },
 });
