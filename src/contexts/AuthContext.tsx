@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, ReactNode, useEffect } from
 import axios from 'axios';
 import { User } from '../types';
 
-// ✅ Use /api prefix — Vite proxy forwards this to http://localhost:5000
+// ✅ Use /api prefix — Vite proxy forwards this to Cloud Run backend
 // Do NOT use full URL here — it bypasses the Vite proxy
 axios.defaults.baseURL = '/api';
 
