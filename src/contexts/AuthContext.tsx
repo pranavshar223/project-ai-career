@@ -2,10 +2,9 @@ import React, { createContext, useContext, useState, ReactNode, useEffect } from
 import axios from 'axios';
 import { User } from '../types';
 
-// IMPORTANT: Make sure this line is uncommented for production
-const API_BASE_URL =  'https://my-backend-service-995199928922.asia-south1.run.app/api';
-
-axios.defaults.baseURL = API_BASE_URL;
+// ✅ Use /api prefix — Vite proxy forwards this to Cloud Run backend
+// Do NOT use full URL here — it bypasses the Vite proxy
+axios.defaults.baseURL = '/api';
 
 interface AuthContextType {
   user: User | null;
@@ -17,8 +16,8 @@ interface AuthContextType {
     background: 'student' | 'professional'
   ) => Promise<void>;
   logout: () => void;
-  isLoading: boolean; // For login/register spinners
-  isAuthLoading: boolean; // For initial auth check
+  isLoading: boolean;
+  isAuthLoading: boolean;
   token: string | null;
 }
 
@@ -42,7 +41,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
 
-  // Add token to all requests
+  // Add token to all requests automatically
   useEffect(() => {
     const interceptor = axios.interceptors.request.use(
       (config) => {
@@ -59,7 +58,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, [token]);
 
-  // Verify token with backend
+  // Verify token with backend on app load
   const verifyToken = async (savedToken: string) => {
     try {
       const res = await axios.get('/auth/verify', {
@@ -83,10 +82,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const res = await axios.post('/auth/login', { email, password });
       const { token, user } = res.data;
-
       setToken(token);
       setUser(user);
-
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
     } catch (error) {
@@ -113,10 +110,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         background,
       });
       const { token, user } = res.data;
-
       setToken(token);
       setUser(user);
-
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
     } catch (error) {
@@ -135,7 +130,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.removeItem('user');
   };
 
-  // Check for existing token on mount
+  // Check for existing token on app mount
   useEffect(() => {
     const savedToken = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');

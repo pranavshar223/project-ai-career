@@ -10,7 +10,6 @@ const Chat: React.FC = () => {
   const [sessionId] = useState(`session_${Date.now()}`);
   const { token } = useAuth();
 
-  // Load chat history on component mount
   useEffect(() => {
     loadChatHistory();
   }, []);
@@ -33,52 +32,11 @@ const Chat: React.FC = () => {
         setMessages(formattedMessages);
       }
     } catch (error) {
-      console.error("Error loading chat history:", error);
+      // Chat history not found is fine — fresh session
+      console.log("No previous chat history for this session");
     }
   };
 
-  // const handleSendMessage = async (content: string) => {
-  //   const userMessage: ChatMessage = {
-  //     id: Date.now().toString(),
-  //     content,
-  //     role: "user",
-  //     timestamp: new Date(),
-  //   };
-
-  //   setMessages((prev) => [...prev, userMessage]);
-  //   setIsLoading(true);
-
-  //   try {
-  //     const response = await axios.post('/chat/message', {
-  //       content,
-  //       sessionId,
-  //     }, {
-  //       headers: { Authorization: `Bearer ${token}` }
-  //     });
-
-  //     if (response.data.response) {
-  //       const aiMessage: ChatMessage = {
-  //         id: response.data.response.id,
-  //         content: response.data.response.content,
-  //         role: "assistant",
-  //         timestamp: new Date(response.data.response.timestamp),
-  //       };
-
-  //       setMessages((prev) => [...prev, aiMessage]);
-  //     }
-  //   } catch (error: any) {
-  //     console.error("Error sending message:", error);
-  //     const errorMessage: ChatMessage = {
-  //       id: (Date.now() + 1).toString(),
-  //       content: error.response?.data?.message || "I'm sorry, I encountered an error. Please try again.",
-  //       role: "assistant",
-  //       timestamp: new Date(),
-  //     };
-  //     setMessages((prev) => [...prev, errorMessage]);
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
   const handleSendMessage = async (content: string) => {
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
@@ -107,15 +65,15 @@ const Chat: React.FC = () => {
 
         setMessages((prev) => [...prev, aiMessage]);
 
-        // 🔥 Check if AI returned roadmap info
+        // ✅ If AI detected roadmap intent, auto-generate roadmap
+        // ✅ Fixed URL: removed /api/ prefix (baseURL is already /api)
         if (response.data.response.roadmapData) {
           const { careerGoal, targetRole, timeframe } =
             response.data.response.roadmapData;
 
           try {
-            // Call your roadmap generation API
             await axios.post(
-              "/api/roadmaps/generate",
+              "/roadmaps/generate",  // ✅ Fixed: was /api/roadmaps/generate
               {
                 careerGoal,
                 targetRole,
@@ -125,9 +83,19 @@ const Chat: React.FC = () => {
                 headers: { Authorization: `Bearer ${token}` },
               }
             );
-            console.log("Roadmap saved to MongoDB");
+            console.log("Roadmap generated and saved from chat");
+
+            // Notify user that roadmap was created
+            const roadmapNotice: ChatMessage = {
+              id: (Date.now() + 2).toString(),
+              content: `✅ I've generated your personalized roadmap for **${careerGoal}**! Head to the Dashboard to see it.`,
+              role: "assistant",
+              timestamp: new Date(),
+            };
+            setMessages((prev) => [...prev, roadmapNotice]);
+
           } catch (err) {
-            console.error("Error saving roadmap:", err);
+            console.error("Error generating roadmap from chat:", err);
           }
         }
       }

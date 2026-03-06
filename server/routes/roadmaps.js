@@ -7,9 +7,10 @@ const geminiService = require('../services/geminiService');
 const mongoose = require('mongoose');
 const router = express.Router();
 
-// @route   POST /api/roadmaps/generate
-// @desc    Generate a new roadmap using AI
-// @access  Private
+// ─────────────────────────────────────────────────────────────
+// POST /api/roadmaps/generate
+// Generate a new AI roadmap — now calls geminiService.generateRoadmap()
+// ─────────────────────────────────────────────────────────────
 router.post('/generate', auth, [
   body('careerGoal')
     .trim()
@@ -28,99 +29,222 @@ router.post('/generate', auth, [
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({
-        message: 'Validation failed',
-        errors: errors.array()
-      });
+      return res.status(400).json({ message: 'Validation failed', errors: errors.array() });
     }
 
     const { careerGoal, targetRole, timeframe = '6-months' } = req.body;
     const userId = req.user._id;
 
     const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
-    // Generate roadmap
-    let roadmapData = await generateRoadmapWithAI(careerGoal, {
+    // ✅ Use the dedicated generateRoadmap function (NOT generateResponse)
+    const roadmapData = await geminiService.generateRoadmap(careerGoal, {
       userProfile: user,
       targetRole,
       timeframe
     });
 
-    if (!roadmapData || !Array.isArray(roadmapData.items)) {
-      throw new Error('Invalid roadmap structure from AI');
-    }
-
-    // ✅ Normalize items to guarantee schema compatibility
-    const normalizedItems = roadmapData.items.map((item, index) => ({
-      title: item.title || `Step ${index + 1}`,
-      description: item.description || item.title || '',
-      type: item.type || 'skill',
-      duration: item.duration || '',
-      priority: item.priority || 'medium',
-      order: item.order ?? index + 1,
-      skills: item.skills || [],
-      estimatedHours: item.estimatedHours || 0,
-      resources: item.resources || []
-    }));
-
     const roadmap = new Roadmap({
       userId,
-      title: roadmapData.title || `Roadmap for ${careerGoal}`,
-      description: roadmapData.description || '',
-      careerGoal: careerGoal, // ✅ always ensure required field
+      title: roadmapData.title,
+      description: roadmapData.description,
+      careerGoal,
       targetRole: targetRole || careerGoal,
-      items: normalizedItems,
-      totalEstimatedDuration: roadmapData.totalEstimatedDuration || '',
-      difficulty: roadmapData.difficulty || 'intermediate'
+      items: roadmapData.items,
+      totalEstimatedDuration: roadmapData.totalEstimatedDuration,
+      difficulty: roadmapData.difficulty
     });
 
     await roadmap.save();
 
     res.status(201).json({
       message: 'Roadmap generated successfully',
-      roadmap: {
-        id: roadmap._id,
-        title: roadmap.title,
-        description: roadmap.description,
-        careerGoal: roadmap.careerGoal,
-        targetRole: roadmap.targetRole,
-        items: roadmap.items,
-        totalEstimatedDuration: roadmap.totalEstimatedDuration,
-        difficulty: roadmap.difficulty,
-        progress: roadmap.progress,
-        createdAt: roadmap.createdAt
-      }
+      roadmap: formatRoadmap(roadmap)
     });
 
   } catch (error) {
     console.error('Generate roadmap error:', error);
-
     res.status(500).json({
       message: 'Error generating roadmap',
-      error: process.env.NODE_ENV === 'development'
-        ? error.message
-        : undefined
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
 
-// @route   GET /api/roadmaps
-// @desc    Get all roadmaps for user
-// @access  Private
+// ─────────────────────────────────────────────────────────────
+// POST /api/roadmaps/:id/adapt
+// ✅ NEW: Adapt roadmap when task is missed or completed early
+// ─────────────────────────────────────────────────────────────
+router.post('/:id/adapt', auth, async (req, res) => {
+  try {
+    const { triggerType, itemId } = req.body;
+    // triggerType: 'missed' | 'completed'
+
+    if (!['missed', 'completed'].includes(triggerType)) {
+      return res.status(400).json({ message: 'triggerType must be "missed" or "completed"' });
+    }
+
+    const roadmap = await Roadmap.findOne({ _id: req.params.id, userId: req.user._id });
+    if (!roadmap) return res.status(404).json({ message: 'Roadmap not found' });
+
+    const triggeredItem = roadmap.items.id(itemId);
+    if (!triggeredItem) return res.status(404).json({ message: 'Item not found' });
+
+    // Call AI to generate adaptive tasks
+    const adaptation = await geminiService.adaptRoadmap(roadmap, triggerType, triggeredItem);
+
+    if (!adaptation.newItems || adaptation.newItems.length === 0) {
+      return res.status(200).json({
+        message: 'No adaptation needed',
+        roadmap: formatRoadmap(roadmap)
+      });
+    }
+
+    // Normalize and append new items to roadmap
+    const today = new Date();
+    const maxOrder = Math.max(...roadmap.items.map(i => i.order), 0);
+
+    adaptation.newItems.forEach((item, index) => {
+      const weekNum = item.weekNumber || 1;
+      roadmap.items.push({
+        title: item.title,
+        description: item.description || '',
+        type: ['skill', 'project', 'certification', 'course'].includes(item.type) ? item.type : 'skill',
+        phase: ['foundation', 'development', 'advanced', 'professional'].includes(item.phase) ? item.phase : 'development',
+        weekNumber: weekNum,
+        dueDate: item.dueDate ? new Date(item.dueDate) : new Date(today.getTime() + weekNum * 7 * 24 * 60 * 60 * 1000),
+        scheduledStartDate: new Date(today.getTime() + (weekNum - 1) * 7 * 24 * 60 * 60 * 1000),
+        status: 'pending',
+        completed: false,
+        duration: item.duration || '1 week',
+        priority: item.priority || 'high',
+        order: maxOrder + index + 1,
+        skills: item.skills || [],
+        estimatedHours: item.estimatedHours || 0,
+        resources: sanitizeResources(item.resources),
+        isAdapted: true,
+        adaptedReason: triggerType === 'missed' ? 'missed_previous' : 'completed_early',
+        dependsOn: triggeredItem._id
+      });
+    });
+
+    roadmap.lastAdaptedAt = today;
+    await roadmap.save();
+
+    res.json({
+      message: `Roadmap adapted: ${adaptation.adaptationReason}`,
+      adaptationReason: adaptation.adaptationReason,
+      newItemsCount: adaptation.newItems.length,
+      roadmap: formatRoadmap(roadmap)
+    });
+
+  } catch (error) {
+    console.error('Adapt roadmap error:', error);
+    res.status(500).json({
+      message: 'Error adapting roadmap',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
+// PUT /api/roadmaps/:id/items/:itemId/toggle
+// Toggle task completion — auto-triggers adaptation if completed
+// ─────────────────────────────────────────────────────────────
+router.put('/:id/items/:itemId/toggle', auth, async (req, res) => {
+  try {
+    const roadmap = await Roadmap.findOne({ _id: req.params.id, userId: req.user._id });
+    if (!roadmap) return res.status(404).json({ message: 'Roadmap not found' });
+
+    const item = roadmap.items.id(req.params.itemId);
+    if (!item) return res.status(404).json({ message: 'Roadmap item not found' });
+
+    item.completed = !item.completed;
+    item.completedAt = item.completed ? new Date() : null;
+    item.status = item.completed ? 'completed' : 'pending';
+
+    await roadmap.save();
+
+    // Update user streak
+    if (item.completed) {
+      const user = await User.findById(req.user._id);
+      if (user.updateStreak) {
+        user.updateStreak();
+        await user.save();
+      }
+    }
+
+    // ✅ Auto-adapt: if completed, trigger AI to add next related tasks
+    let adaptationTriggered = false;
+    if (item.completed && req.body.autoAdapt !== false) {
+      try {
+        const adaptation = await geminiService.adaptRoadmap(roadmap, 'completed', item);
+        if (adaptation.newItems?.length > 0) {
+          const today = new Date();
+          const maxOrder = Math.max(...roadmap.items.map(i => i.order), 0);
+          adaptation.newItems.forEach((newItem, index) => {
+            const weekNum = newItem.weekNumber || 1;
+            roadmap.items.push({
+              title: newItem.title,
+              description: newItem.description || '',
+              type: ['skill','project','certification','course'].includes(newItem.type) ? newItem.type : 'skill',
+              phase: ['foundation','development','advanced','professional'].includes(newItem.phase) ? newItem.phase : 'development',
+              weekNumber: weekNum,
+              dueDate: newItem.dueDate ? new Date(newItem.dueDate) : new Date(today.getTime() + weekNum * 7 * 24 * 60 * 60 * 1000),
+              scheduledStartDate: new Date(today.getTime() + (weekNum - 1) * 7 * 24 * 60 * 60 * 1000),
+              status: 'pending',
+              completed: false,
+              duration: newItem.duration || '1 week',
+              priority: newItem.priority || 'high',
+              order: maxOrder + index + 1,
+              skills: newItem.skills || [],
+              estimatedHours: newItem.estimatedHours || 0,
+              resources: sanitizeResources(newItem.resources),
+              isAdapted: true,
+              adaptedReason: 'completed_early',
+              dependsOn: item._id
+            });
+          });
+          roadmap.lastAdaptedAt = today;
+          await roadmap.save();
+          adaptationTriggered = true;
+        }
+      } catch (adaptError) {
+        // Adaptation failure should NOT fail the toggle
+        console.error('Auto-adapt failed (non-critical):', adaptError.message);
+      }
+    }
+
+    res.json({
+      message: 'Roadmap item updated successfully',
+      item: {
+        id: item._id,
+        title: item.title,
+        completed: item.completed,
+        status: item.status,
+        completedAt: item.completedAt
+      },
+      progress: roadmap.progress,
+      adaptationTriggered
+    });
+
+  } catch (error) {
+    console.error('Toggle roadmap item error:', error);
+    res.status(500).json({ message: 'Error updating roadmap item' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
+// GET /api/roadmaps
+// ─────────────────────────────────────────────────────────────
 router.get('/', auth, async (req, res) => {
   try {
-    const { page = 1, limit = 10, active = true } = req.query;
+    const { page = 1, limit = 10, active } = req.query;
 
-    const query = {
-  userId: new mongoose.Types.ObjectId(req.user._id)
-};
-
-if (active === 'true') {
-  query.isActive = true;
-} else if (active === 'false') {
-  query.isActive = false;
-}
-// if active=all → no filter
+    const query = { userId: new mongoose.Types.ObjectId(req.user._id) };
+    if (active === 'true') query.isActive = true;
+    else if (active === 'false') query.isActive = false;
 
     const roadmaps = await Roadmap.find(query)
       .sort({ createdAt: -1 })
@@ -130,20 +254,7 @@ if (active === 'true') {
     const total = await Roadmap.countDocuments(query);
 
     res.json({
-      roadmaps: roadmaps.map(roadmap => ({
-        id: roadmap._id,
-        title: roadmap.title,
-        description: roadmap.description,
-        careerGoal: roadmap.careerGoal,
-        targetRole: roadmap.targetRole,
-        items: roadmap.items, 
-        progress: roadmap.progress,
-        difficulty: roadmap.difficulty,
-        totalEstimatedDuration: roadmap.totalEstimatedDuration,
-        isActive: roadmap.isActive,
-        createdAt: roadmap.createdAt,
-        lastUpdated: roadmap.lastUpdated
-      })),
+      roadmaps: roadmaps.map(formatRoadmap),
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -153,405 +264,92 @@ if (active === 'true') {
     });
   } catch (error) {
     console.error('Get roadmaps error:', error);
-    res.status(500).json({
-      message: 'Error fetching roadmaps'
-    });
+    res.status(500).json({ message: 'Error fetching roadmaps' });
   }
 });
 
-// @route   GET /api/roadmaps/:id
-// @desc    Get specific roadmap
-// @access  Private
+// ─────────────────────────────────────────────────────────────
+// GET /api/roadmaps/:id
+// ─────────────────────────────────────────────────────────────
 router.get('/:id', auth, async (req, res) => {
   try {
-    const roadmap = await Roadmap.findOne({
-      _id: req.params.id,
-      userId: req.user._id
-    });
-
-    if (!roadmap) {
-      return res.status(404).json({
-        message: 'Roadmap not found'
-      });
-    }
-
-    res.json({
-      roadmap: {
-        id: roadmap._id,
-        title: roadmap.title,
-        description: roadmap.description,
-        careerGoal: roadmap.careerGoal,
-        targetRole: roadmap.targetRole,
-        items: roadmap.items,
-        totalEstimatedDuration: roadmap.totalEstimatedDuration,
-        difficulty: roadmap.difficulty,
-        progress: roadmap.progress,
-        isActive: roadmap.isActive,
-        createdAt: roadmap.createdAt,
-        lastUpdated: roadmap.lastUpdated
-      }
-    });
+    const roadmap = await Roadmap.findOne({ _id: req.params.id, userId: req.user._id });
+    if (!roadmap) return res.status(404).json({ message: 'Roadmap not found' });
+    res.json({ roadmap: formatRoadmap(roadmap) });
   } catch (error) {
     console.error('Get roadmap error:', error);
-    res.status(500).json({
-      message: 'Error fetching roadmap'
-    });
+    res.status(500).json({ message: 'Error fetching roadmap' });
   }
 });
 
-// @route   PUT /api/roadmaps/:id/items/:itemId/toggle
-// @desc    Toggle completion status of roadmap item
-// @access  Private
-router.put('/:id/items/:itemId/toggle', auth, async (req, res) => {
-  try {
-    const roadmap = await Roadmap.findOne({
-      _id: req.params.id,
-      userId: req.user._id
-    });
-
-    if (!roadmap) {
-      return res.status(404).json({
-        message: 'Roadmap not found'
-      });
-    }
-
-    const item = roadmap.items.id(req.params.itemId);
-    if (!item) {
-      return res.status(404).json({
-        message: 'Roadmap item not found'
-      });
-    }
-
-    // Toggle completion status
-    item.completed = !item.completed;
-    item.completedAt = item.completed ? new Date() : null;
-
-    await roadmap.save();
-
-    // Update user streak if item was completed
-    if (item.completed) {
-      const user = await User.findById(req.user._id);
-      user.updateStreak();
-      await user.save();
-    }
-
-    res.json({
-      message: 'Roadmap item updated successfully',
-      item: {
-        id: item._id,
-        title: item.title,
-        completed: item.completed,
-        completedAt: item.completedAt
-      },
-      progress: roadmap.progress
-    });
-  } catch (error) {
-    console.error('Toggle roadmap item error:', error);
-    res.status(500).json({
-      message: 'Error updating roadmap item'
-    });
-  }
-});
-
-// @route   PUT /api/roadmaps/:id
-// @desc    Update roadmap
-// @access  Private
+// ─────────────────────────────────────────────────────────────
+// PUT /api/roadmaps/:id  (update title/description/isActive)
+// ─────────────────────────────────────────────────────────────
 router.put('/:id', auth, [
-  body('title')
-    .optional()
-    .trim()
-    .isLength({ min: 3, max: 200 })
-    .withMessage('Title must be between 3 and 200 characters'),
-  body('description')
-    .optional()
-    .trim()
-    .isLength({ max: 1000 })
-    .withMessage('Description cannot exceed 1000 characters')
+  body('title').optional().trim().isLength({ min: 3, max: 200 }),
+  body('description').optional().trim().isLength({ max: 1000 })
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        message: 'Validation failed',
-        errors: errors.array()
-      });
-    }
+    if (!errors.isEmpty()) return res.status(400).json({ message: 'Validation failed', errors: errors.array() });
 
-    const roadmap = await Roadmap.findOne({
-      _id: req.params.id,
-      userId: req.user._id
-    });
+    const roadmap = await Roadmap.findOne({ _id: req.params.id, userId: req.user._id });
+    if (!roadmap) return res.status(404).json({ message: 'Roadmap not found' });
 
-    if (!roadmap) {
-      return res.status(404).json({
-        message: 'Roadmap not found'
-      });
-    }
-
-    // Update allowed fields
     const allowedUpdates = ['title', 'description', 'isActive'];
     allowedUpdates.forEach(field => {
-      if (req.body[field] !== undefined) {
-        roadmap[field] = req.body[field];
-      }
+      if (req.body[field] !== undefined) roadmap[field] = req.body[field];
     });
 
     await roadmap.save();
-
-    res.json({
-      message: 'Roadmap updated successfully',
-      roadmap: {
-        id: roadmap._id,
-        title: roadmap.title,
-        description: roadmap.description,
-        isActive: roadmap.isActive,
-        lastUpdated: roadmap.lastUpdated
-      }
-    });
+    res.json({ message: 'Roadmap updated successfully', roadmap: formatRoadmap(roadmap) });
   } catch (error) {
     console.error('Update roadmap error:', error);
-    res.status(500).json({
-      message: 'Error updating roadmap'
-    });
+    res.status(500).json({ message: 'Error updating roadmap' });
   }
 });
 
-// @route   DELETE /api/roadmaps/:id
-// @desc    Delete roadmap
-// @access  Private
+// ─────────────────────────────────────────────────────────────
+// DELETE /api/roadmaps/:id
+// ─────────────────────────────────────────────────────────────
 router.delete('/:id', auth, async (req, res) => {
   try {
-    const roadmap = await Roadmap.findOneAndDelete({
-      _id: req.params.id,
-      userId: req.user._id
-    });
-
-    if (!roadmap) {
-      return res.status(404).json({
-        message: 'Roadmap not found'
-      });
-    }
-
-    res.json({
-      message: 'Roadmap deleted successfully'
-    });
+    const roadmap = await Roadmap.findOneAndDelete({ _id: req.params.id, userId: req.user._id });
+    if (!roadmap) return res.status(404).json({ message: 'Roadmap not found' });
+    res.json({ message: 'Roadmap deleted successfully' });
   } catch (error) {
     console.error('Delete roadmap error:', error);
-    res.status(500).json({
-      message: 'Error deleting roadmap'
-    });
+    res.status(500).json({ message: 'Error deleting roadmap' });
   }
 });
 
-// Helper function to generate roadmap using AI
-async function generateRoadmapWithAI(careerGoal, context) {
-  try {
-    const prompt = `Generate a detailed career roadmap for someone who wants to become: ${careerGoal}
-
-User Context:
-- Background: ${context.userProfile.background}
-- Current Skills: ${context.userProfile.skills?.map(s => `${s.name} (${s.level})`).join(', ') || 'None'}
-- Timeframe: ${context.timeframe}
-- Target Role: ${context.targetRole || careerGoal}
-
-Please provide a structured roadmap with 6-10 items that includes:
-1. Skills to learn
-2. Projects to build
-3. Certifications to obtain
-4. Courses to take
-
-Format as JSON with this structure:
-{
-  "title": "Career Roadmap Title",
-  "description": "Brief description of the roadmap",
-  "difficulty": "beginner|intermediate|advanced",
-  "totalEstimatedDuration": "X months",
-  "items": [
-    {
-      "title": "Item title",
-      "description": "Detailed description",
-      "type": "skill|project|certification|course",
-      "duration": "X weeks",
-      "priority": "high|medium|low",
-      "order": 1,
-      "skills": ["skill1", "skill2"],
-      "estimatedHours": 40,
-      "resources": [
-        {
-          "title": "Resource name",
-          "url": "https://example.com",
-          "type": "course|article|video|book"
-        }
-      ]
-    }
-  ]
-}`;
-
-    const response = await geminiService.generateResponse(prompt, context);
-    
-    try {
-      // Try to parse JSON from AI response
-      const jsonMatch = response.content.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]);
-      }
-    } catch (parseError) {
-      console.log('Failed to parse AI JSON, using fallback');
-    }
-
-    // Fallback to mock roadmap
-    return generateMockRoadmap(careerGoal, context);
-  } catch (error) {
-    console.error('AI roadmap generation error:', error);
-    return generateMockRoadmap(careerGoal, context);
-  }
+// ─────────────────────────────────────────────────────────────
+// HELPER: Consistent roadmap response shape
+// ─────────────────────────────────────────────────────────────
+function formatRoadmap(roadmap) {
+  return {
+    id: roadmap._id,
+    title: roadmap.title,
+    description: roadmap.description,
+    careerGoal: roadmap.careerGoal,
+    targetRole: roadmap.targetRole,
+    items: roadmap.items,
+    totalEstimatedDuration: roadmap.totalEstimatedDuration,
+    difficulty: roadmap.difficulty,
+    progress: roadmap.progress,
+    isActive: roadmap.isActive,
+    lastAdaptedAt: roadmap.lastAdaptedAt,
+    createdAt: roadmap.createdAt,
+    lastUpdated: roadmap.lastUpdated
+  };
 }
 
-// Fallback mock roadmap generator
-function generateMockRoadmap(careerGoal, context) {
-  const lowerGoal = careerGoal.toLowerCase();
-  
-  if (lowerGoal.includes('data scientist') || lowerGoal.includes('data science')) {
-    return {
-      title: `Data Science Career Roadmap`,
-      description: `A comprehensive path to becoming a Data Scientist with hands-on projects and industry-relevant skills.`,
-      difficulty: 'intermediate',
-      totalEstimatedDuration: '8-12 months',
-      items: [
-        {
-          title: 'Master Python Programming',
-          description: 'Learn Python fundamentals, data structures, and object-oriented programming concepts essential for data science.',
-          type: 'skill',
-          duration: '4-6 weeks',
-          priority: 'high',
-          order: 1,
-          skills: ['Python', 'Programming'],
-          estimatedHours: 60,
-          resources: [
-            { title: 'Python for Everybody Specialization', url: 'https://coursera.org', type: 'course' },
-            { title: 'Automate the Boring Stuff with Python', url: 'https://automatetheboringstuff.com', type: 'book' }
-          ]
-        },
-        {
-          title: 'Learn Data Manipulation with Pandas',
-          description: 'Master pandas library for data cleaning, transformation, and analysis.',
-          type: 'skill',
-          duration: '3-4 weeks',
-          priority: 'high',
-          order: 2,
-          skills: ['Pandas', 'Data Manipulation'],
-          estimatedHours: 40,
-          resources: [
-            { title: 'Pandas Documentation', url: 'https://pandas.pydata.org', type: 'documentation' }
-          ]
-        },
-        {
-          title: 'Statistics and Probability Fundamentals',
-          description: 'Build strong foundation in statistics, probability, and hypothesis testing.',
-          type: 'skill',
-          duration: '6-8 weeks',
-          priority: 'high',
-          order: 3,
-          skills: ['Statistics', 'Probability', 'Mathematics'],
-          estimatedHours: 80,
-          resources: [
-            { title: 'Khan Academy Statistics', url: 'https://khanacademy.org', type: 'course' }
-          ]
-        },
-        {
-          title: 'Build Your First Data Analysis Project',
-          description: 'Complete an end-to-end data analysis project using real-world dataset.',
-          type: 'project',
-          duration: '2-3 weeks',
-          priority: 'high',
-          order: 4,
-          skills: ['Data Analysis', 'Python', 'Pandas'],
-          estimatedHours: 30,
-          resources: [
-            { title: 'Kaggle Learn', url: 'https://kaggle.com/learn', type: 'course' }
-          ]
-        },
-        {
-          title: 'Machine Learning Fundamentals',
-          description: 'Learn supervised and unsupervised learning algorithms using scikit-learn.',
-          type: 'skill',
-          duration: '6-8 weeks',
-          priority: 'high',
-          order: 5,
-          skills: ['Machine Learning', 'Scikit-learn'],
-          estimatedHours: 100,
-          resources: [
-            { title: 'Machine Learning Course by Andrew Ng', url: 'https://coursera.org', type: 'course' }
-          ]
-        },
-        {
-          title: 'Data Visualization with Matplotlib and Seaborn',
-          description: 'Create compelling visualizations to communicate insights effectively.',
-          type: 'skill',
-          duration: '2-3 weeks',
-          priority: 'medium',
-          order: 6,
-          skills: ['Data Visualization', 'Matplotlib', 'Seaborn'],
-          estimatedHours: 25,
-          resources: []
-        }
-      ]
-    };
-  }
-
-  // Generic roadmap for other career goals
-  return {
-    title: `${careerGoal} Career Roadmap`,
-    description: `A personalized learning path to achieve your career goal of becoming a ${careerGoal}.`,
-    difficulty: 'intermediate',
-    totalEstimatedDuration: '6-9 months',
-    items: [
-      {
-        title: 'Research Industry Requirements',
-        description: 'Study job postings and industry trends to understand required skills and qualifications.',
-        type: 'skill',
-        duration: '1 week',
-        priority: 'high',
-        order: 1,
-        skills: ['Research', 'Industry Knowledge'],
-        estimatedHours: 10,
-        resources: []
-      },
-      {
-        title: 'Build Foundation Skills',
-        description: 'Develop core technical and soft skills required for your target role.',
-        type: 'skill',
-        duration: '8-12 weeks',
-        priority: 'high',
-        order: 2,
-        skills: ['Technical Skills', 'Communication'],
-        estimatedHours: 120,
-        resources: []
-      },
-      {
-        title: 'Complete Hands-on Projects',
-        description: 'Build portfolio projects that demonstrate your capabilities to potential employers.',
-        type: 'project',
-        duration: '6-8 weeks',
-        priority: 'high',
-        order: 3,
-        skills: ['Project Management', 'Portfolio Development'],
-        estimatedHours: 80,
-        resources: []
-      },
-      {
-        title: 'Network and Apply for Positions',
-        description: 'Connect with professionals in your field and start applying for relevant positions.',
-        type: 'skill',
-        duration: '4-6 weeks',
-        priority: 'medium',
-        order: 4,
-        skills: ['Networking', 'Job Search'],
-        estimatedHours: 40,
-        resources: []
-      }
-    ]
-  };
+// sanitizeResources helper
+function sanitizeResources(resources) {
+  if (!Array.isArray(resources)) return [];
+  const validTypes = ["course", "article", "video", "book", "documentation"];
+  const typeMap = { tutorial: "article", dataset: "documentation", platform: "course", guide: "article", tool: "documentation", project: "article", website: "article", repo: "documentation", repository: "documentation", blog: "article", podcast: "video", exercise: "course" };
+  return resources.filter(r => r.title && r.url).map(r => ({ ...r, type: validTypes.includes(r.type) ? r.type : (typeMap[r.type] || "article") }));
 }
 
 module.exports = router;
