@@ -2,9 +2,10 @@ import React, { createContext, useContext, useState, ReactNode, useEffect } from
 import axios from 'axios';
 import { User } from '../types';
 
-// ✅ Use /api prefix — Vite proxy forwards this to Cloud Run backend
-// Do NOT use full URL here — it bypasses the Vite proxy
-axios.defaults.baseURL = '/api';
+// ✅ In development: Vite proxy forwards /api to localhost:5000
+// ✅ In production: uses full Cloud Run URL from .env.production
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+axios.defaults.baseURL = API_BASE_URL;
 
 interface AuthContextType {
   user: User | null;
