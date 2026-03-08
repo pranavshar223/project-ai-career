@@ -25,6 +25,11 @@ AI Career Assistant combines the power of Google Gemini with real-time job marke
 **Profile & Skills Management** — Track your skills, set career goals, and manage everything from a clean, personalized dashboard.
 
 ---
+```md
+## Project Roadmap
+See the feature roadmap in [ROADMAP.md](./ROADMAP.md).
+```
+---
 
 ## Tech Stack
 
