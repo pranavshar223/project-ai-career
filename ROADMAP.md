@@ -94,11 +94,3 @@ Phase 4 (Future)
 |- Smart Suggestions Feed             [Community]
 ```
 
----
-
-## Status Legend
-
-| Symbol | Meaning |
-|--------|---------|
-| `- [x]` | Feature is complete and live |
-| `- [ ]` | Pending — not yet started |
