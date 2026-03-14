@@ -47,6 +47,13 @@ export interface ChatMessage {
   timestamp: Date;
 }
 
+export interface ApiChatMessage {
+  id: string;
+  content: string;
+  role: string;
+  timestamp: string;
+}
+
 export interface SkillGap {
   skill: string;
   current: number;

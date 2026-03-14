@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import ChatInterface from "../components/Chat/ChatInterface";
-import { ChatMessage } from "../types";
+import { ChatMessage, ApiChatMessage } from "../types";
 import { useAuth } from "../contexts/AuthContext";
 
 interface ChatProps {
@@ -16,7 +16,7 @@ const Chat: React.FC<ChatProps> = ({ onSessionsChange }) => {
 
   useEffect(() => {
     loadChatHistory();
-  }, []);
+  }, [loadChatHistory]);
 
   const loadChatHistory = async () => {
     try {
@@ -26,10 +26,10 @@ const Chat: React.FC<ChatProps> = ({ onSessionsChange }) => {
 
       if (response.data.messages) {
         const formattedMessages: ChatMessage[] = response.data.messages.map(
-          (msg: any) => ({
+          (msg: ApiChatMessage) => ({
             id: msg.id,
             content: msg.content,
-            role: msg.role,
+            role: msg.role as 'user' | 'assistant',
             timestamp: new Date(msg.timestamp),
           })
         );
@@ -49,7 +49,7 @@ const Chat: React.FC<ChatProps> = ({ onSessionsChange }) => {
           ]);
         }
       }
-    } catch (error) {
+    } catch {
       console.log("No previous chat history for this session");
     }
   };
@@ -117,12 +117,12 @@ const Chat: React.FC<ChatProps> = ({ onSessionsChange }) => {
           }
         }
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error sending message:", error);
       const errorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         content:
-          error.response?.data?.message ||
+          (error as AxiosError)?.response?.data?.message ||
           "I'm sorry, I encountered an error. Please try again.",
         role: "assistant",
         timestamp: new Date(),

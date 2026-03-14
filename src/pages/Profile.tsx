@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { User, Mail, Calendar, Book, Award, Target, Plus, X } from 'lucide-react';
+import { User, Calendar, Book, Award, Target, Plus, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const Profile: React.FC = () => {
-  const { user, token } = useAuth();
+  const { token } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [newSkill, setNewSkill] = useState({ name: '', level: 'beginner', category: 'general' });
@@ -38,9 +38,9 @@ const Profile: React.FC = () => {
 
   useEffect(() => {
     loadProfile();
-  }, [token]);
+  }, [token, loadProfile]);
 
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
     if (!token) return;
     
     setIsLoading(true);
@@ -78,7 +78,7 @@ const Profile: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  });
 
   const handleSave = async () => {
     try {
@@ -351,7 +351,7 @@ const Profile: React.FC = () => {
               </div>
 
               <div className="flex flex-wrap gap-2">
-                {profile.skills.map((skill: any, index) => (
+                {profile.skills.map((skill: Skill, index) => (
                   <div
                     key={skill._id || index}
                     className="flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
@@ -415,7 +415,7 @@ const Profile: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                {profile.careerGoals.map((goal: any, index) => (
+                {profile.careerGoals.map((goal: CareerGoal, index) => (
                   <div key={goal._id || index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center">
                       <Award className="w-4 h-4 text-yellow-500 mr-2" />

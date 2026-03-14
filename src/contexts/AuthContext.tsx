@@ -142,7 +142,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } else {
       setIsAuthLoading(false);
     }
-  }, []);
+  }, [verifyToken]);
 
   return (
     <AuthContext.Provider

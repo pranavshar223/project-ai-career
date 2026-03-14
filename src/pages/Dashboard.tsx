@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from "react";
-import axios from "axios";
-import { TrendingUp, Target, BookOpen, Users, Plus, RefreshCw, AlertCircle, CheckCircle2, Clock } from "lucide-react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import axios, { AxiosError } from "axios";
+import { TrendingUp, Target, BookOpen, Users, Plus, RefreshCw, AlertCircle } from "lucide-react";
 import SkillGapChart from "../components/Dashboard/SkillGapChart";
 import StreakTracker from "../components/Dashboard/StreakTracker";
 import RoadmapTimeline from "../components/Dashboard/RoadmapTimeline";
@@ -12,9 +12,9 @@ const Dashboard: React.FC = () => {
   const { token } = useAuth();
   const [skillGaps, setSkillGaps] = useState<SkillGap[]>([]);
   const [roadmapItems, setRoadmapItems] = useState<RoadmapItem[]>([]);
-  const [activeRoadmap, setActiveRoadmap] = useState<any>(null);
-  const [userProfile, setUserProfile] = useState<any>(null);
-  const [analytics, setAnalytics] = useState<any>(null);
+  const [activeRoadmap, setActiveRoadmap] = useState<RoadmapItem | null>(null);
+  const [userProfile, setUserProfile] = useState<User | null>(null);
+  const [analytics, setAnalytics] = useState<unknown>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isAdapting, setIsAdapting] = useState(false);
@@ -29,11 +29,11 @@ const Dashboard: React.FC = () => {
     timeframe: "6-months"
   });
 
-  const authHeaders = { Authorization: `Bearer ${token}` };
+  const authHeaders = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
 
   useEffect(() => {
     loadDashboardData();
-  }, [token]);
+  }, [token, loadDashboardData]);
 
   const loadDashboardData = useCallback(async () => {
     if (!token) return;
@@ -55,7 +55,7 @@ const Dashboard: React.FC = () => {
       }
 
       if (profileRes.data.profile.skills) {
-        const gaps = profileRes.data.profile.skills.map((skill: any) => {
+        const gaps = profileRes.data.profile.skills.map((skill: Skill) => {
           const levelMap: Record<string, number> = { beginner: 20, intermediate: 60, advanced: 90 };
           const current = levelMap[skill.level] ?? 40;
           return {
@@ -72,7 +72,7 @@ const Dashboard: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [token]);
+  }, [token, authHeaders]);
 
   // ─── Generate Roadmap ─────────────────────────────────────────
   const handleGenerateRoadmap = async () => {
@@ -93,9 +93,9 @@ const Dashboard: React.FC = () => {
       setRoadmapItems(newRoadmap.items || []);
       setShowGenerateForm(false);
       setGenerateForm({ careerGoal: "", targetRole: "", timeframe: "6-months" });
-    } catch (error: any) {
+    } catch (error) {
       setGenerateError(
-        error.response?.data?.error || error.response?.data?.message || "Failed to generate roadmap. Please try again."
+        (error as AxiosError)?.response?.data?.error || (error as AxiosError)?.response?.data?.message || "Failed to generate roadmap. Please try again."
       );
     } finally {
       setIsGenerating(false);
@@ -129,7 +129,7 @@ const Dashboard: React.FC = () => {
         setTimeout(() => setAdaptationMessage(null), 4000);
       } else {
         // Just update progress
-        setActiveRoadmap((prev: any) => prev ? { ...prev, progress: res.data.progress } : prev);
+        setActiveRoadmap((prev: unknown) => prev ? { ...prev as object, progress: res.data.progress } : prev);
       }
     } catch (error) {
       // Revert optimistic update
@@ -369,7 +369,7 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 {/* Missed task alert with adapt button */}
-                {roadmapItems.some(i => (i as any).status === 'missed') && (
+                {roadmapItems.some((i: RoadmapItem) => (i as RoadmapItem & { status?: string }).status === 'missed') && (
                   <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-xl flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <AlertCircle className="w-5 h-5 text-orange-500" />
@@ -379,7 +379,7 @@ const Dashboard: React.FC = () => {
                     </div>
                     <button
                       onClick={() => {
-                        const missedItem = roadmapItems.find(i => (i as any).status === 'missed');
+                        const missedItem = roadmapItems.find((i: RoadmapItem) => (i as RoadmapItem & { status?: string }).status === 'missed');
                         if (missedItem) handleAdaptMissed(missedItem.id);
                       }}
                       disabled={isAdapting}
@@ -438,7 +438,7 @@ const Dashboard: React.FC = () => {
               <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Phase Progress</h3>
                 {['foundation', 'development', 'advanced', 'professional'].map(phase => {
-                  const phaseItems = roadmapItems.filter(i => (i as any).phase === phase);
+                  const phaseItems = roadmapItems.filter((i: RoadmapItem) => (i as RoadmapItem & { phase?: string }).phase === phase);
                   if (phaseItems.length === 0) return null;
                   const done = phaseItems.filter(i => i.completed).length;
                   const pct = Math.round((done / phaseItems.length) * 100);
