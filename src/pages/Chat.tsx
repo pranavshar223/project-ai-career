@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axios, { AxiosError } from "axios";
 import ChatInterface from "../components/Chat/ChatInterface";
 import { ChatMessage, ApiChatMessage } from "../types";
@@ -14,16 +14,12 @@ const Chat: React.FC<ChatProps> = ({ onSessionsChange }) => {
   const [sessionId] = useState(`session_${Date.now()}`);
   const { token } = useAuth();
 
-  useEffect(() => {
-    loadChatHistory();
-  }, [loadChatHistory]);
-
-  const loadChatHistory = async () => {
+  const loadChatHistory = useCallback(async () => {
     try {
       const response = await axios.get(`/chat/history/${sessionId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
+      
       if (response.data.messages) {
         const formattedMessages: ChatMessage[] = response.data.messages.map(
           (msg: ApiChatMessage) => ({
@@ -52,7 +48,11 @@ const Chat: React.FC<ChatProps> = ({ onSessionsChange }) => {
     } catch {
       console.log("No previous chat history for this session");
     }
-  };
+  }, [sessionId, token, onSessionsChange]);
+
+  useEffect(() => {
+    loadChatHistory();
+  }, [loadChatHistory]);
 
   const handleSendMessage = async (content: string) => {
     const userMessage: ChatMessage = {

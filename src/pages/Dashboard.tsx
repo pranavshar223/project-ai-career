@@ -4,7 +4,7 @@ import { TrendingUp, Target, BookOpen, Users, Plus, RefreshCw, AlertCircle } fro
 import SkillGapChart from "../components/Dashboard/SkillGapChart";
 import StreakTracker from "../components/Dashboard/StreakTracker";
 import RoadmapTimeline from "../components/Dashboard/RoadmapTimeline";
-import { SkillGap, RoadmapItem } from "../types";
+import { SkillGap, Roadmap, RoadmapItem, Skill, User, DashboardAnalytics } from "../types";
 import { useAuth } from "../contexts/AuthContext";
 import { Link } from "react-router-dom";
 
@@ -12,9 +12,9 @@ const Dashboard: React.FC = () => {
   const { token } = useAuth();
   const [skillGaps, setSkillGaps] = useState<SkillGap[]>([]);
   const [roadmapItems, setRoadmapItems] = useState<RoadmapItem[]>([]);
-  const [activeRoadmap, setActiveRoadmap] = useState<RoadmapItem | null>(null);
+  const [activeRoadmap, setActiveRoadmap] = useState<Roadmap | null>(null);
   const [userProfile, setUserProfile] = useState<User | null>(null);
-  const [analytics, setAnalytics] = useState<unknown>(null);
+  const [analytics, setAnalytics] = useState<DashboardAnalytics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isAdapting, setIsAdapting] = useState(false);
@@ -129,7 +129,7 @@ const Dashboard: React.FC = () => {
         setTimeout(() => setAdaptationMessage(null), 4000);
       } else {
         // Just update progress
-        setActiveRoadmap((prev: unknown) => prev ? { ...prev as object, progress: res.data.progress } : prev);
+        setActiveRoadmap((prev) => (prev ? { ...prev, progress: res.data.progress } : prev));
       }
     } catch (error) {
       // Revert optimistic update

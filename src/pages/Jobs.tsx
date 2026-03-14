@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Briefcase } from 'lucide-react';
 import JobCard from '../components/Jobs/JobCard';
@@ -20,17 +20,7 @@ const Jobs: React.FC<JobsProps> = ({
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load recommendations on mount
-  useEffect(() => {
-    loadJobs();
-  }, [token, loadJobs]);
-
-  // Trigger search when sidebar button is pressed
-  useEffect(() => {
-    if (triggerSearch > 0) handleSearch();
-  }, [triggerSearch, handleSearch]);
-
-  const loadJobs = async () => {
+  const loadJobs = useCallback(async () => {
     if (!token) return;
     setIsLoading(true);
     try {
@@ -59,9 +49,9 @@ const Jobs: React.FC<JobsProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [token]);
 
-  const handleSearch = async () => {
+  const handleSearch = useCallback(async () => {
     if (!token) return;
     setIsLoading(true);
     try {
@@ -89,7 +79,17 @@ const Jobs: React.FC<JobsProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [token, searchQuery, location]);
+
+  // Load recommendations on mount
+  useEffect(() => {
+    loadJobs();
+  }, [loadJobs]);
+
+  // Trigger search when sidebar button is pressed
+  useEffect(() => {
+    if (triggerSearch > 0) handleSearch();
+  }, [triggerSearch, handleSearch]);
 
   const filteredJobs = jobs.filter((job) => {
     const matchesSearch =
