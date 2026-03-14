@@ -4,7 +4,11 @@ import ChatInterface from "../components/Chat/ChatInterface";
 import { ChatMessage } from "../types";
 import { useAuth } from "../contexts/AuthContext";
 
-const Chat: React.FC = () => {
+interface ChatProps {
+  onSessionsChange?: (sessions: { id: string; title: string; date: string }[]) => void;
+}
+
+const Chat: React.FC<ChatProps> = ({ onSessionsChange }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId] = useState(`session_${Date.now()}`);
@@ -30,9 +34,22 @@ const Chat: React.FC = () => {
           })
         );
         setMessages(formattedMessages);
+
+        // Build session list for sidebar
+        if (onSessionsChange && formattedMessages.length > 0) {
+          const firstUserMsg = formattedMessages.find((m) => m.role === "user");
+          onSessionsChange([
+            {
+              id: sessionId,
+              title: firstUserMsg
+                ? firstUserMsg.content.slice(0, 40) + "..."
+                : "Session",
+              date: new Date().toLocaleDateString(),
+            },
+          ]);
+        }
       }
     } catch (error) {
-      // Chat history not found is fine — fresh session
       console.log("No previous chat history for this session");
     }
   };
@@ -45,7 +62,21 @@ const Chat: React.FC = () => {
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages((prev) => {
+      const updated = [...prev, userMessage];
+      // Update sidebar session title from first user message
+      if (onSessionsChange && prev.filter((m) => m.role === "user").length === 0) {
+        onSessionsChange([
+          {
+            id: sessionId,
+            title: content.slice(0, 40) + (content.length > 40 ? "..." : ""),
+            date: new Date().toLocaleDateString(),
+          },
+        ]);
+      }
+      return updated;
+    });
+
     setIsLoading(true);
 
     try {
@@ -65,27 +96,15 @@ const Chat: React.FC = () => {
 
         setMessages((prev) => [...prev, aiMessage]);
 
-        // ✅ If AI detected roadmap intent, auto-generate roadmap
-        // ✅ Fixed URL: removed /api/ prefix (baseURL is already /api)
         if (response.data.response.roadmapData) {
           const { careerGoal, targetRole, timeframe } =
             response.data.response.roadmapData;
-
           try {
             await axios.post(
-              "/roadmaps/generate",  // ✅ Fixed: was /api/roadmaps/generate
-              {
-                careerGoal,
-                targetRole,
-                timeframe: timeframe || "6-months",
-              },
-              {
-                headers: { Authorization: `Bearer ${token}` },
-              }
+              "/roadmaps/generate",
+              { careerGoal, targetRole, timeframe: timeframe || "6-months" },
+              { headers: { Authorization: `Bearer ${token}` } }
             );
-            console.log("Roadmap generated and saved from chat");
-
-            // Notify user that roadmap was created
             const roadmapNotice: ChatMessage = {
               id: (Date.now() + 2).toString(),
               content: `✅ I've generated your personalized roadmap for **${careerGoal}**! Head to the Dashboard to see it.`,
@@ -93,7 +112,6 @@ const Chat: React.FC = () => {
               timestamp: new Date(),
             };
             setMessages((prev) => [...prev, roadmapNotice]);
-
           } catch (err) {
             console.error("Error generating roadmap from chat:", err);
           }
@@ -119,15 +137,12 @@ const Chat: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            AI Career Assistant
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-900">AI Career Assistant</h1>
           <p className="text-gray-600 mt-2">
             Get personalized career guidance powered by AI. Ask about skills,
             roadmaps, or career planning.
           </p>
         </div>
-
         <ChatInterface
           messages={messages}
           onSendMessage={handleSendMessage}

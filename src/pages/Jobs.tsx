@@ -1,49 +1,60 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Search, MapPin, Filter, Briefcase } from 'lucide-react';
+import { Briefcase } from 'lucide-react';
 import JobCard from '../components/Jobs/JobCard';
 import { Job } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 
-const Jobs: React.FC = () => {
+interface JobsProps {
+  searchQuery?: string;
+  location?: string;
+  triggerSearch?: number; // increments when sidebar Search button is clicked
+}
+
+const Jobs: React.FC<JobsProps> = ({
+  searchQuery = '',
+  location = '',
+  triggerSearch = 0,
+}) => {
   const { token } = useAuth();
   const [jobs, setJobs] = useState<Job[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [location, setLocation] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
+  // Load recommendations on mount
   useEffect(() => {
     loadJobs();
   }, [token]);
 
+  // Trigger search when sidebar button is pressed
+  useEffect(() => {
+    if (triggerSearch > 0) handleSearch();
+  }, [triggerSearch]);
+
   const loadJobs = async () => {
     if (!token) return;
-    
     setIsLoading(true);
     try {
-      // Load job recommendations
       const response = await axios.get('/jobs/recommendations', {
         headers: { Authorization: `Bearer ${token}` },
-        params: { limit: 10 }
+        params: { limit: 10 },
       });
-      
       if (response.data.recommendations) {
-        const formattedJobs: Job[] = response.data.recommendations.map((job: any) => ({
-          id: job.id,
-          title: job.title,
-          company: job.company,
-          location: job.location,
-          salary: job.salary,
-          description: job.description,
-          url: job.applyUrl || '#',
-          posted: new Date(job.postedDate || job.posted),
-          matchScore: job.matchScore || 75,
-        }));
-        setJobs(formattedJobs);
+        setJobs(
+          response.data.recommendations.map((job: any) => ({
+            id: job.id,
+            title: job.title,
+            company: job.company,
+            location: job.location,
+            salary: job.salary,
+            description: job.description,
+            url: job.applyUrl || '#',
+            posted: new Date(job.postedDate || job.posted),
+            matchScore: job.matchScore || 75,
+          }))
+        );
       }
     } catch (error) {
       console.error('Error loading jobs:', error);
-      // Keep empty array if API fails
       setJobs([]);
     } finally {
       setIsLoading(false);
@@ -52,31 +63,26 @@ const Jobs: React.FC = () => {
 
   const handleSearch = async () => {
     if (!token) return;
-    
     setIsLoading(true);
     try {
       const response = await axios.get('/jobs/search', {
         headers: { Authorization: `Bearer ${token}` },
-        params: {
-          query: searchQuery,
-          location: location,
-          limit: 20
-        }
+        params: { query: searchQuery, location, limit: 20 },
       });
-      
       if (response.data.jobs) {
-        const formattedJobs: Job[] = response.data.jobs.map((job: any) => ({
-          id: job.id,
-          title: job.title,
-          company: job.company,
-          location: job.location,
-          salary: job.salary,
-          description: job.description,
-          url: job.applyUrl || '#',
-          posted: new Date(job.postedDate || job.posted),
-          matchScore: job.matchScore || 75,
-        }));
-        setJobs(formattedJobs);
+        setJobs(
+          response.data.jobs.map((job: any) => ({
+            id: job.id,
+            title: job.title,
+            company: job.company,
+            location: job.location,
+            salary: job.salary,
+            description: job.description,
+            url: job.applyUrl || '#',
+            posted: new Date(job.postedDate || job.posted),
+            matchScore: job.matchScore || 75,
+          }))
+        );
       }
     } catch (error) {
       console.error('Error searching jobs:', error);
@@ -85,64 +91,26 @@ const Jobs: React.FC = () => {
     }
   };
 
-  const filteredJobs = jobs.filter(job => {
-    const matchesSearch = searchQuery === '' || 
-                         job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         job.company.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesLocation = location === '' || 
-                           job.location.toLowerCase().includes(location.toLowerCase());
+  const filteredJobs = jobs.filter((job) => {
+    const matchesSearch =
+      searchQuery === '' ||
+      job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      job.company.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesLocation =
+      location === '' ||
+      job.location.toLowerCase().includes(location.toLowerCase());
     return matchesSearch && matchesLocation;
   });
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Job Recommendations</h1>
           <p className="text-gray-600 mt-2">
             Personalized job opportunities based on your skills and career goals
           </p>
-        </div>
-
-        {/* Search Filters */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Search jobs or companies..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            
-            <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Location..."
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
-            <button 
-              onClick={handleSearch}
-              className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Search className="w-4 h-4 mr-2" />
-              Search
-            </button>
-
-            <button className="flex items-center justify-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
-              <Filter className="w-4 h-4 mr-2" />
-              More Filters
-            </button>
-          </div>
         </div>
 
         {/* Results Summary */}
@@ -162,7 +130,10 @@ const Jobs: React.FC = () => {
         {isLoading ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {[...Array(4)].map((_, index) => (
-              <div key={index} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 animate-pulse">
+              <div
+                key={index}
+                className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 animate-pulse"
+              >
                 <div className="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
                 <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
                 <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
@@ -189,7 +160,7 @@ const Jobs: React.FC = () => {
             <p className="text-gray-600 mb-4">
               Try adjusting your search criteria or check back later for new opportunities.
             </p>
-            <button 
+            <button
               onClick={loadJobs}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
