@@ -7,12 +7,14 @@ export interface User {
 }
 
 export interface Skill {
+  _id?: string;
   name: string;
   level: 'beginner' | 'intermediate' | 'advanced';
   category: string;
 }
 
 export interface CareerGoal {
+  _id?: string;
   title: string;
   description: string;
   targetDate?: Date;
@@ -47,9 +49,38 @@ export interface ChatMessage {
   timestamp: Date;
 }
 
+export interface ApiChatMessage {
+  id: string;
+  content: string;
+  role: string;
+  timestamp: string;
+}
+
 export interface SkillGap {
   skill: string;
   current: number;
   required: number;
   gap: number;
+}
+
+export interface RoadmapProgress {
+  percentage: number;
+  completed: number;
+  missed: number;
+}
+
+export interface Roadmap {
+  id: string;
+  items: RoadmapItem[];
+  progress?: RoadmapProgress;
+  lastAdaptedAt?: string | Date;
+  [key: string]: unknown;
+}
+
+export interface DashboardAnalyticsOverview {
+  totalChatMessages: number;
+}
+
+export interface DashboardAnalytics {
+  overview: DashboardAnalyticsOverview;
 }

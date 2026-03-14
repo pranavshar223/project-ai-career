@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Briefcase } from 'lucide-react';
 import JobCard from '../components/Jobs/JobCard';
@@ -20,17 +20,7 @@ const Jobs: React.FC<JobsProps> = ({
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load recommendations on mount
-  useEffect(() => {
-    loadJobs();
-  }, [token]);
-
-  // Trigger search when sidebar button is pressed
-  useEffect(() => {
-    if (triggerSearch > 0) handleSearch();
-  }, [triggerSearch]);
-
-  const loadJobs = async () => {
+  const loadJobs = useCallback(async () => {
     if (!token) return;
     setIsLoading(true);
     try {
@@ -40,7 +30,7 @@ const Jobs: React.FC<JobsProps> = ({
       });
       if (response.data.recommendations) {
         setJobs(
-          response.data.recommendations.map((job: any) => ({
+          response.data.recommendations.map((job: Job) => ({
             id: job.id,
             title: job.title,
             company: job.company,
@@ -59,9 +49,9 @@ const Jobs: React.FC<JobsProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [token]);
 
-  const handleSearch = async () => {
+  const handleSearch = useCallback(async () => {
     if (!token) return;
     setIsLoading(true);
     try {
@@ -71,7 +61,7 @@ const Jobs: React.FC<JobsProps> = ({
       });
       if (response.data.jobs) {
         setJobs(
-          response.data.jobs.map((job: any) => ({
+          response.data.jobs.map((job: Job) => ({
             id: job.id,
             title: job.title,
             company: job.company,
@@ -89,7 +79,17 @@ const Jobs: React.FC<JobsProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [token, searchQuery, location]);
+
+  // Load recommendations on mount
+  useEffect(() => {
+    loadJobs();
+  }, [loadJobs]);
+
+  // Trigger search when sidebar button is pressed
+  useEffect(() => {
+    if (triggerSearch > 0) handleSearch();
+  }, [triggerSearch, handleSearch]);
 
   const filteredJobs = jobs.filter((job) => {
     const matchesSearch =
@@ -119,7 +119,7 @@ const Jobs: React.FC<JobsProps> = ({
             <Briefcase className="w-5 h-5 mr-2" />
             <span>{filteredJobs.length} jobs found</span>
           </div>
-          <select className="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+          <select className="px-3 py-2 border border-gray-300 rounded-lg text-sm" aria-label="Sort jobs">
             <option>Sort by Match Score</option>
             <option>Sort by Date Posted</option>
             <option>Sort by Salary</option>

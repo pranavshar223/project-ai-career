@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Sidebar from './components/Layout/Sidebar';
 import Header from './components/Layout/Header';
@@ -91,8 +91,6 @@ const DefaultLayout: React.FC<RouteProps> = ({ children }) => (
 );
 
 const AppContent: React.FC = () => {
-  const { user } = useAuth();
-
   return (
     <Routes>
       <Route

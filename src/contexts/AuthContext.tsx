@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { User } from '../types';
 
@@ -58,8 +58,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, [token]);
 
+  // Logout
+  const logout = useCallback(() => {
+    setToken(null);
+    setUser(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  }, []);
+
   // Verify token with backend on app load
-  const verifyToken = async (savedToken: string) => {
+  const verifyToken = useCallback(async (savedToken: string) => {
     try {
       const res = await axios.get('/auth/verify', {
         headers: { Authorization: `Bearer ${savedToken}` },
@@ -74,7 +82,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       setIsAuthLoading(false);
     }
-  };
+  }, [logout]);
 
   // Login
   const login = async (email: string, password: string) => {
@@ -122,14 +130,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Logout
-  const logout = () => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-  };
-
   // Check for existing token on app mount
   useEffect(() => {
     const savedToken = localStorage.getItem('token');
@@ -142,7 +142,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } else {
       setIsAuthLoading(false);
     }
-  }, []);
+  }, [verifyToken]);
 
   return (
     <AuthContext.Provider
