@@ -2,8 +2,7 @@ import React, { createContext, useContext, useState, ReactNode, useEffect, useCa
 import axios from 'axios';
 import { User } from '../types';
 
-// ✅ Direct Cloud Run URL — no env variable needed
-const API_BASE_URL = 'https://my-backend-service-995199928922.asia-south1.run.app/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 axios.defaults.baseURL = API_BASE_URL;
 
 interface AuthContextType {
@@ -41,7 +40,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
 
-  // Add token to all requests automatically
   useEffect(() => {
     const interceptor = axios.interceptors.request.use(
       (config) => {
@@ -52,13 +50,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       },
       (error) => Promise.reject(error)
     );
-
     return () => {
       axios.interceptors.request.eject(interceptor);
     };
   }, [token]);
 
-  // Logout
   const logout = useCallback(() => {
     setToken(null);
     setUser(null);
@@ -66,7 +62,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.removeItem('user');
   }, []);
 
-  // Verify token with backend on app load
   const verifyToken = useCallback(async (savedToken: string) => {
     try {
       const res = await axios.get('/auth/verify', {
@@ -84,7 +79,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [logout]);
 
-  // Login
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
@@ -102,7 +96,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Register
   const register = async (
     email: string,
     password: string,
@@ -130,16 +123,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Check for existing token on app mount
+  // ✅ Fixed: guard against "undefined" string in localStorage
   useEffect(() => {
     const savedToken = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
 
-    if (savedToken && savedUser) {
-      setToken(savedToken);
-      setUser(JSON.parse(savedUser));
-      verifyToken(savedToken);
+    if (savedToken && savedUser && savedUser !== 'undefined' && savedUser !== 'null') {
+      try {
+        const parsedUser = JSON.parse(savedUser);
+        setToken(savedToken);
+        setUser(parsedUser);
+        verifyToken(savedToken);
+      } catch (e) {
+        console.error('Failed to parse saved user', e);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setIsAuthLoading(false);
+      }
     } else {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
       setIsAuthLoading(false);
     }
   }, [verifyToken]);
