@@ -31,10 +31,6 @@ const Dashboard: React.FC = () => {
 
   const authHeaders = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
 
-  useEffect(() => {
-    loadDashboardData();
-  }, [token, loadDashboardData]);
-
   const loadDashboardData = useCallback(async () => {
     if (!token) return;
     setIsLoading(true);
@@ -73,6 +69,10 @@ const Dashboard: React.FC = () => {
       setIsLoading(false);
     }
   }, [token, authHeaders]);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
 
   // ─── Generate Roadmap ─────────────────────────────────────────
   const handleGenerateRoadmap = async () => {
