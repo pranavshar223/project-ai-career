@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 
+// Define the ChatMessage schema
 const chatMessageSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
