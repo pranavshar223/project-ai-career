@@ -1,7 +1,76 @@
 const express = require('express');
 const auth = require('../middleware/auth');
+const Skill = require('../models/Skill');
+const UserSkill = require('../models/UserSkill')
 
 const router = express.Router();
+
+// @route   GET /api/skills/
+// @desc    Get all skills (grouped by category)
+// @access  Public
+router.get('/', async (req, res) => {
+  try {
+    const skills = await Skill.find({});
+    const grouped = skills.reduce((acc, skill) => {
+      if (!acc[skill.category]) acc[skill.category] = [];
+      acc[skill.category].push(skill);
+      return acc;
+    }, {})
+
+    res.json({ success: true, data: grouped });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+
+// @route   GET /api/skills/user
+// @desc    To add skills to a user profile
+// @access  Private
+router.post('/user', auth, async (req, res) => {
+  try {
+    const { skills } = req.body
+    const userId = req.user?._id
+
+    const operations = skills.map((s) => ({
+      updateOne: {
+        filter: { userId, skillId: s.skillId },
+        update: { $set: { proficiencyLevel: s.proficiencyLevel } },
+        upsert: true,
+      },
+    }));
+
+    await UserSkill.bulkWrite(operations);
+
+    res.json({ success: true, message: "Skills updated" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+})
+
+// @route   GET /api/skills/suggestions
+// @desc    Get skill suggestions based on career goals
+// @access  Private
+router.get('/suggestions', auth, async (req, res) => {
+  try {
+    const { query = '', category = '', limit = 20 } = req.query;
+
+    // Get skill suggestions based on query and category
+    const suggestions = getSkillSuggestions(query, category, parseInt(limit));
+
+    res.json({
+      suggestions,
+      query,
+      category
+    });
+  } catch (error) {
+    console.error('Get skill suggestions error:', error);
+    res.status(500).json({
+      message: 'Error fetching skill suggestions'
+    });
+  }
+});
+
 
 // @route   GET /api/skills/suggestions
 // @desc    Get skill suggestions based on career goals
