@@ -1,7 +1,8 @@
 const express = require('express');
 const auth = require('../middleware/auth');
 const Skill = require('../models/Skill');
-const UserSkill = require('../models/UserSkill')
+const UserSkill = require('../models/UserSkill');
+const User=require('../models/User');
 
 const router = express.Router();
 
@@ -32,6 +33,20 @@ router.post('/user', auth, async (req, res) => {
     const { skills } = req.body
     const userId = req.user?._id
 
+    if(!userId){
+      return res.status(401).json({message : "Unauthorized"})
+    }
+
+    if(!Array.isArray(skills) || skills.length===0){
+      return res.status(400).json({message : "Skills must be a non-empty array"})
+    }
+
+    for (const s of skills) {
+      if (!s.skillId || !s.proficiencyLevel) {
+        return res.status(400).json({ message: "Invalid skill format" });
+      }
+    }
+
     const operations = skills.map((s) => ({
       updateOne: {
         filter: { userId, skillId: s.skillId },
@@ -42,35 +57,30 @@ router.post('/user', auth, async (req, res) => {
 
     await UserSkill.bulkWrite(operations);
 
+    const skillDocs=await Skill.find({
+      _id:{$in:skills.map(s=>s.skillId)}
+    });
+
+    const formattedSkills=skills.map(s=>{
+      const skill=skillDocs.find(
+        doc=>doc._id.toString()===s.skillId
+      );
+      return {
+        name: skill?.name,
+        category: skill?.category,
+        level: s.proficiencyLevel
+      }
+    })
+
+    await User.findByIdAndUpdate(userId,{
+      skills:formattedSkills
+    });
+    
     res.json({ success: true, message: "Skills updated" });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({ message: err.message });
   }
 })
-
-// @route   GET /api/skills/suggestions
-// @desc    Get skill suggestions based on career goals
-// @access  Private
-router.get('/suggestions', auth, async (req, res) => {
-  try {
-    const { query = '', category = '', limit = 20 } = req.query;
-
-    // Get skill suggestions based on query and category
-    const suggestions = getSkillSuggestions(query, category, parseInt(limit));
-
-    res.json({
-      suggestions,
-      query,
-      category
-    });
-  } catch (error) {
-    console.error('Get skill suggestions error:', error);
-    res.status(500).json({
-      message: 'Error fetching skill suggestions'
-    });
-  }
-});
-
 
 // @route   GET /api/skills/suggestions
 // @desc    Get skill suggestions based on career goals
