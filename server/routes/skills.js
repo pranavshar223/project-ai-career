@@ -33,17 +33,32 @@ router.post('/user', auth, async (req, res) => {
     const { skills } = req.body
     const userId = req.user?._id
 
+    // auth check
     if(!userId){
       return res.status(401).json({message : "Unauthorized"})
     }
 
+    // basic validation
     if(!Array.isArray(skills) || skills.length===0){
-      return res.status(400).json({message : "Skills must be a non-empty array"})
+      return res.status(400).json({
+        message : "Skills must be a non-empty array"
+      })
     }
+
+    // validate each skill
+    const allowedLevels = ["beginner", "intermediate", "advanced"];
 
     for (const s of skills) {
       if (!s.skillId || !s.proficiencyLevel) {
-        return res.status(400).json({ message: "Invalid skill format" });
+        return res.status(400).json({ 
+          message: "Invalid skill format" 
+        });
+      }
+
+      if (!allowedLevels.includes(s.proficiencyLevel)) {
+        return res.status(400).json({
+          message: `Invalid proficiencyLevel for skillId ${s.skillId}`
+        });
       }
     }
 
@@ -58,7 +73,7 @@ router.post('/user', auth, async (req, res) => {
     await UserSkill.bulkWrite(operations);
 
     const skillDocs=await Skill.find({
-      _id:{$in:skills.map(s=>s.skillId)}
+      _id:{$in : skills.map(s=>s.skillId)}
     });
 
     const formattedSkills=skills.map(s=>{
@@ -75,7 +90,7 @@ router.post('/user', auth, async (req, res) => {
     await User.findByIdAndUpdate(userId,{
       skills:formattedSkills
     });
-    
+
     res.json({ success: true, message: "Skills updated" });
   } catch (err) {
     res.status(500).json({ message: err.message });
