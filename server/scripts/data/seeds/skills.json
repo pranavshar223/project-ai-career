@@ -1,0 +1,134 @@
+[
+    {
+        "name": "Python",
+        "category": "Programming"
+    },
+    {
+        "name": "JavaScript",
+        "category": "Programming"
+    },
+    {
+        "name": "TypeScript",
+        "category": "Programming"
+    },
+    {
+        "name": "Java",
+        "category": "Programming"
+    },
+    {
+        "name": "C++",
+        "category": "Programming"
+    },
+    {
+        "name": "React",
+        "category": "Frontend"
+    },
+    {
+        "name": "Vue",
+        "category": "Frontend"
+    },
+    {
+        "name": "HTML",
+        "category": "Frontend"
+    },
+    {
+        "name": "CSS",
+        "category": "Frontend"
+    },
+    {
+        "name": "Tailwind CSS",
+        "category": "Frontend"
+    },
+    {
+        "name": "Node.js",
+        "category": "Backend"
+    },
+    {
+        "name": "Express",
+        "category": "Backend"
+    },
+    {
+        "name": "Django",
+        "category": "Backend"
+    },
+    {
+        "name": "FastAPI",
+        "category": "Backend"
+    },
+    {
+        "name": "DSA",
+        "category": "CS Fundamentals"
+    },
+    {
+        "name": "System Design",
+        "category": "CS Fundamentals"
+    },
+    {
+        "name": "OS",
+        "category": "CS Fundamentals"
+    },
+    {
+        "name": "Networking",
+        "category": "CS Fundamentals"
+    },
+    {
+        "name": "TensorFlow",
+        "category": "AI/ML"
+    },
+    {
+        "name": "PyTorch",
+        "category": "AI/ML"
+    },
+    {
+        "name": "Scikit-learn",
+        "category": "AI/ML"
+    },
+    {
+        "name": "Pandas",
+        "category": "AI/ML"
+    },
+    {
+        "name": "Docker",
+        "category": "DevOps"
+    },
+    {
+        "name": "Kubernetes",
+        "category": "DevOps"
+    },
+    {
+        "name": "CI/CD",
+        "category": "DevOps"
+    },
+    {
+        "name": "GitHub Actions",
+        "category": "DevOps"
+    },
+    {
+        "name": "AWS",
+        "category": "Cloud"
+    },
+    {
+        "name": "GCP",
+        "category": "Cloud"
+    },
+    {
+        "name": "Azure",
+        "category": "Cloud"
+    },
+    {
+        "name": "MongoDB",
+        "category": "Databases"
+    },
+    {
+        "name": "PostgreSQL",
+        "category": "Databases"
+    },
+    {
+        "name": "MySQL",
+        "category": "Databases"
+    },
+    {
+        "name": "Redis",
+        "category": "Databases"
+    }
+]
