@@ -25,14 +25,13 @@ router.get('/', async (req, res) => {
 });
 
 
-// @route   GET /api/skills/user
+// @route   POST /api/skills/user
 // @desc    To add skills to a user profile
 // @access  Private
 router.post('/user', auth, async (req, res) => {
   try {
     const { skills } = req.body
     const userId = req.user?._id
-
     // auth check
     if(!userId){
       return res.status(401).json({message : "Unauthorized"})

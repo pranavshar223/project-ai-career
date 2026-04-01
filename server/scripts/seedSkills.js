@@ -1,3 +1,4 @@
+require('dotenv').config();
 const connectDB = require('../config/database')
 const path=require('path')
 const fs = require('fs')
@@ -5,8 +6,8 @@ const Skill = require('../models/Skill')
 
 async function seed() {
     try {
-        connectDB();
-        const dataPath=path.join(__dirname,'../../data/seeds/skills/json');
+        await connectDB();
+        const dataPath=path.join(__dirname,'../../data/seeds/skills.json');
         const data = JSON.parse(
             fs.readFileSync(dataPath, "utf-8")
         );
