@@ -8,6 +8,18 @@ const geminiService = require("../services/geminiService");
 
 const router = express.Router();
 
+// helper: detect greeting and verbosity
+function detectVerbosityAndGreeting(text) {
+  const s = (text || '').trim();
+  const isGreeting = /^(hi|hello|hey|hiya|hey there|good morning|good evening|namaste)([!.]*)?$/i.test(s);
+  const wantsBrief = /\b(short|brief|one line|concise|quick)\b/i.test(s) || s.length < 25;
+  const wantsDetailed = /\b(detailed|full|in depth|step by step|long)\b/i.test(s) || s.length > 500;
+  if (isGreeting) return { mode: 'brief', isGreeting: true };
+  if (wantsBrief) return { mode: 'brief', isGreeting: false };
+  if (wantsDetailed) return { mode: 'detailed', isGreeting: false };
+  return { mode: 'normal', isGreeting: false };
+}
+
 // @route   POST /api/chat/message
 // @desc    Send message to AI and get response
 // @access  Private
@@ -91,10 +103,15 @@ router.post(
       };
 
       // ✅ Generate AI chat response using geminiService
-      const aiResponse = await geminiService.generateResponse(
-        content,
-        enhancedContext
-      );
+      // determine verbosity / greeting
+      const verb = detectVerbosityAndGreeting(content);
+
+      // pass verbosity and isGreeting into the service context
+      const aiResponse = await geminiService.generateResponse(content, {
+        ...enhancedContext,
+        verbosity: verb.mode,    // 'brief' | 'normal' | 'detailed'
+        isGreeting: verb.isGreeting
+      });
 
       const processingTime = Date.now() - startTime;
 
@@ -110,16 +127,82 @@ router.post(
         lowerContent.includes("learning path")
       ) {
         // Extract goal from message if possible
-        const goalMatch = content.match(
-          /(?:become|be|for|as)\s+(?:a\s+)?([a-zA-Z\s]+?)(?:\s|$|,|\.)/i
-        );
-        const careerGoal = goalMatch ? goalMatch[1].trim() : "Software Engineer";
+        // Improved career-goal detection (keyword mapping + regex fallback)
+        function normalizeRoleName(raw) {
+          if (!raw) return null;
+          const s = raw.trim().toLowerCase();
+          const map = {
+            'devops': 'DevOps Engineer',
+            'devops engineer': 'DevOps Engineer',
+            'site reliability engineer': 'Site Reliability Engineer',
+            'sre': 'Site Reliability Engineer',
+            'software engineer': 'Software Engineer',
+            'backend': 'Backend Engineer',
+            'backend engineer': 'Backend Engineer',
+            'frontend': 'Frontend Engineer',
+            'frontend engineer': 'Frontend Engineer',
+            'full stack': 'Full Stack Engineer',
+            'full-stack': 'Full Stack Engineer',
+            'full stack engineer': 'Full Stack Engineer',
+            'data scientist': 'Data Scientist',
+            'machine learning engineer': 'Machine Learning Engineer',
+            'ml engineer': 'Machine Learning Engineer',
+            'security engineer': 'Security Engineer',
+            'cloud engineer': 'Cloud Engineer'
+            // add more common roles as needed
+          };
+          for (const key of Object.keys(map)) {
+            if (s.includes(key)) return map[key];
+          }
+          // Title-case fallback
+          return raw.split(/\s+/).map(w => w[0]?.toUpperCase() + w.slice(1)).join(' ');
+        }
 
-        roadmapData = {
-          careerGoal,
-          targetRole: careerGoal,
-          timeframe: "6-months",
-        };
+        // 1) prefer explicit keywords in user's message
+        let careerGoal = null;
+        const lc = content.toLowerCase();
+
+        // direct keyword match (covers "devops", "devops engineer", etc.)
+        const knownRoles = ['devops', 'devops engineer', 'site reliability engineer', 'sre',
+          'software engineer', 'backend', 'frontend', 'full stack', 'data scientist',
+          'machine learning engineer', 'cloud engineer', 'security engineer'];
+
+        for (const r of knownRoles) {
+          if (lc.includes(r)) {
+            careerGoal = normalizeRoleName(r);
+            break;
+          }
+        }
+
+        // 2) if not found, try a regex after words like 'become', 'as', 'for'
+        if (!careerGoal) {
+          const goalMatch = content.match(/(?:become|become a|become an|be|for|as)\s+(?:a\s+|an\s+)?([A-Za-z0-9 &\-]+?)(?:[,.?]|$)/i);
+          if (goalMatch) {
+            careerGoal = normalizeRoleName(goalMatch[1].trim());
+          }
+        }
+
+        // 3) fallback: if user wrote something short (e.g., "DevOps"), use it; otherwise default to a neutral role prompt asking clarification
+        if (!careerGoal) {
+          const shortCandidate = content.trim().split(/[.?!]/)[0].trim();
+          if (shortCandidate.length <= 40) {
+            careerGoal = normalizeRoleName(shortCandidate);
+          } else {
+            // safer fallback — prefer to ask user for clarification rather than assume Software Engineer
+            careerGoal = null;
+          }
+        }
+
+        if (careerGoal) {
+          roadmapData = {
+            careerGoal,
+            targetRole: careerGoal,
+            timeframe: "6-months",
+          };
+        } else {
+          // If we couldn't detect a clear role, don't auto-generate a roadmap — front-end can ask user to clarify.
+          roadmapData = null;
+        }
       }
 
       // Save AI response message
