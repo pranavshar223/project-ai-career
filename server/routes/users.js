@@ -2,6 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
+const UserSkill = require('../models/UserSkill');
 
 const router = express.Router();
 
@@ -10,7 +11,24 @@ const router = express.Router();
 // @access  Private
 router.get('/profile', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select('-password');
+    const userId = req.user._id;
+    const user = await User.findById(userId).select('-password');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const userSkills = await UserSkill.find({ userId })
+      .populate('skillId', 'name category');
+
+    const formattedSkills = userSkills
+      .filter(s => s.skillId)
+      .map(s => ({
+        _id: s.skillId._id,
+        name: s.skillId.name,
+        category: s.skillId.category,
+        level: s.proficiencyLevel
+      }));
     
     res.json({
       profile: {
@@ -19,7 +37,7 @@ router.get('/profile', auth, async (req, res) => {
         email: user.email,
         background: user.background,
         profile: user.profile,
-        skills: user.skills,
+        skills: formattedSkills,
         careerGoals: user.careerGoals,
         preferences: user.preferences,
         streak: user.streak,
@@ -69,7 +87,7 @@ router.put('/profile', auth, [
     }
 
     const user = await User.findById(req.user._id);
-    
+
     // Update allowed fields
     const allowedUpdates = ['name'];
     allowedUpdates.forEach(field => {
@@ -106,140 +124,6 @@ router.put('/profile', auth, [
     res.status(500).json({
       message: 'Error updating profile'
     });
-  }
-});
-
-// @route   POST /api/users/skills
-// @desc    Add skill to user profile
-// @access  Private
-router.post('/skills', auth, [
-  body('name')
-    .trim()
-    .isLength({ min: 1, max: 50 })
-    .withMessage('Skill name must be between 1 and 50 characters'),
-  body('level')
-    .isIn(['beginner', 'intermediate', 'advanced'])
-    .withMessage('Level must be beginner, intermediate, or advanced'),
-  body('category')
-    .optional()
-    .trim()
-    .isLength({ max: 30 })
-    .withMessage('Category cannot exceed 30 characters')
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        message: 'Validation failed',
-        errors: errors.array()
-      });
-    }
-
-    const { name, level, category = 'general' } = req.body;
-    const user = await User.findById(req.user._id);
-
-    // Check if skill already exists
-    const existingSkill = user.skills.find(
-      skill => skill.name.toLowerCase() === name.toLowerCase()
-    );
-
-    if (existingSkill) {
-      return res.status(400).json({
-        message: 'Skill already exists in your profile'
-      });
-    }
-
-    // Add new skill
-    user.skills.push({
-      name,
-      level,
-      category,
-      addedAt: new Date()
-    });
-
-    await user.save();
-
-    res.status(201).json({
-      message: 'Skill added successfully',
-      skill: user.skills[user.skills.length - 1]
-    });
-  } catch (error) {
-    console.error('Add skill error:', error);
-    res.status(500).json({
-      message: 'Error adding skill'
-    });
-  }
-});
-
-// @route   PUT /api/users/skills/:skillId
-// @desc    Update skill level
-// @access  Private
-router.put('/skills/:skillId', auth, [
-  body('level')
-    .isIn(['beginner', 'intermediate', 'advanced'])
-    .withMessage('Level must be beginner, intermediate, or advanced')
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        message: 'Validation failed',
-        errors: errors.array()
-      });
-    }
-
-    const { level } = req.body;
-    const user = await User.findById(req.user._id);
-    
-    const skill = user.skills.id(req.params.skillId);
-    if (!skill) {
-      return res.status(404).json({
-        message: 'Skill not found'
-      });
-    }
-
-    skill.level = level;
-    await user.save();
-
-    res.json({
-      message: 'Skill updated successfully',
-      skill: {
-        id: skill._id,
-        name: skill.name,
-        level: skill.level,
-        category: skill.category
-      }
-    });
-  } catch (error) {
-    console.error('Update skill error:', error);
-    res.status(500).json({
-      message: 'Error updating skill'
-    });
-  }
-});
-
-// @route   DELETE /api/users/skills/:skillId
-// @desc    Remove skill from profile
-// @access  Private
-router.delete('/skills/:skillId', auth, async (req, res) => {
-  try {
-    const user = await User.findByIdAndUpdate(
-      req.user._id,
-      { $pull: { skills: { _id: req.params.skillId } } }, // ✅ Pull out the skill
-      { new: true }
-    );
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    res.json({
-      message: 'Skill removed successfully',
-      skills: user.skills
-    });
-  } catch (error) {
-    console.error('Remove skill error:', error);
-    res.status(500).json({ message: 'Error removing skill' });
   }
 });
 
@@ -325,7 +209,7 @@ router.put('/goals/:goalId', auth, [
 
     const user = await User.findById(req.user._id);
     const goal = user.careerGoals.id(req.params.goalId);
-    
+
     if (!goal) {
       return res.status(404).json({
         message: 'Career goal not found'
@@ -368,13 +252,12 @@ router.delete('/goals/:goalId', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
     const goal = user.careerGoals.id(req.params.goalId);
-    
+
     if (!goal) {
       return res.status(404).json({
         message: 'Career goal not found'
       });
     }
-
     goal.remove();
     await user.save();
 
@@ -425,7 +308,7 @@ router.put('/preferences', auth, [
     }
 
     const user = await User.findById(req.user._id);
-    
+
     // Initialize preferences if not exists
     if (!user.preferences) {
       user.preferences = {};
@@ -459,9 +342,11 @@ router.put('/preferences', auth, [
 router.get('/stats', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
-    
+    const skillsCount = await UserSkill.countDocuments({
+      userId: req.user._id
+    });
     const stats = {
-      skillsCount: user.skills.length,
+      skillsCount: skillsCount,
       goalsCount: user.careerGoals.length,
       completedGoals: user.careerGoals.filter(goal => goal.completed).length,
       currentStreak: user.streak.current,
