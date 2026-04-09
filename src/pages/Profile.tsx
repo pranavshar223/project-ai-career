@@ -2,14 +2,25 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { User, Calendar, Book, Award, Target, Plus, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { Skill, CareerGoal } from '../types';
 
 const Profile: React.FC = () => {
   const { token } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [newSkill, setNewSkill] = useState({ name: '', level: 'beginner', category: 'general' });
+  const [newSkill, setNewSkill] = useState({ category: '', skillId: '', level: 'beginner' });
   const [newGoal, setNewGoal] = useState({ title: '', description: '', priority: 'medium' });
-  
+  const [skillsList, setSkillsList] = useState<Record<string, any>>({});
+
+  useEffect(() => {
+    const fetchSkills = async () => {
+      const res = await axios.get('/skills');
+      setSkillsList(res.data.data);
+    };
+
+    fetchSkills();
+  }, []);
+
   const [profile, setProfile] = useState({
     name: '',
     email: '',
@@ -38,13 +49,13 @@ const Profile: React.FC = () => {
 
   const loadProfile = useCallback(async () => {
     if (!token) return;
-    
+
     setIsLoading(true);
     try {
       const response = await axios.get('/users/profile', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       if (response.data.profile) {
         setProfile({
           ...response.data.profile,
@@ -88,7 +99,7 @@ const Profile: React.FC = () => {
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       setIsEditing(false);
     } catch (error) {
       console.error('Error saving profile:', error);
@@ -96,14 +107,21 @@ const Profile: React.FC = () => {
   };
 
   const handleAddSkill = async () => {
-    if (!newSkill.name.trim()) return;
-    
+    if (!newSkill.skillId) return;
+
     try {
-      await axios.post('/users/skills', newSkill, {
+      await axios.post('/skills/user', {
+        skills: [
+          {
+            skillId: newSkill.skillId,
+            proficiencyLevel: newSkill.level
+          }
+        ]
+      }, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
-      setNewSkill({ name: '', level: 'beginner', category: 'general' });
+
+      setNewSkill({ skillId: '', level: 'beginner', category: '' });
       loadProfile(); // Reload to get updated data
     } catch (error) {
       console.error('Error adding skill:', error);
@@ -112,10 +130,10 @@ const Profile: React.FC = () => {
 
   const handleRemoveSkill = async (skillId: string) => {
     try {
-      await axios.delete(`/users/skills/${skillId}`, {
+      await axios.delete(`/skills/user/${skillId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       loadProfile(); // Reload to get updated data
     } catch (error) {
       console.error('Error removing skill:', error);
@@ -124,12 +142,12 @@ const Profile: React.FC = () => {
 
   const handleAddGoal = async () => {
     if (!newGoal.title.trim()) return;
-    
+
     try {
       await axios.post('/users/goals', newGoal, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       setNewGoal({ title: '', description: '', priority: 'medium' });
       loadProfile(); // Reload to get updated data
     } catch (error) {
@@ -142,7 +160,7 @@ const Profile: React.FC = () => {
       await axios.delete(`/users/goals/${goalId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       loadProfile(); // Reload to get updated data
     } catch (error) {
       console.error('Error removing goal:', error);
@@ -178,11 +196,10 @@ const Profile: React.FC = () => {
               </div>
               <h2 className="text-xl font-semibold text-gray-900">{profile.name}</h2>
               <p className="text-gray-600 mb-4">{profile.email}</p>
-              <span className={`inline-block px-3 py-1 text-sm rounded-full ${
-                profile.background === 'student' 
-                  ? 'bg-green-100 text-green-800' 
-                  : 'bg-blue-100 text-blue-800'
-              }`}>
+              <span className={`inline-block px-3 py-1 text-sm rounded-full ${profile.background === 'student'
+                ? 'bg-green-100 text-green-800'
+                : 'bg-blue-100 text-blue-800'
+                }`}>
                 {profile.background === 'student' ? 'Student' : 'Professional'}
               </span>
             </div>
@@ -227,7 +244,7 @@ const Profile: React.FC = () => {
                     <input
                       type="text"
                       value={profile.name}
-                      onChange={(e) => setProfile({...profile, name: e.target.value})}
+                      onChange={(e) => setProfile({ ...profile, name: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     />
                   ) : (
@@ -247,7 +264,7 @@ const Profile: React.FC = () => {
                       type="text"
                       value={profile.profile.location}
                       onChange={(e) => setProfile({
-                        ...profile, 
+                        ...profile,
                         profile: { ...profile.profile, location: e.target.value }
                       })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -263,7 +280,7 @@ const Profile: React.FC = () => {
                     <select
                       value={profile.profile.experience}
                       onChange={(e) => setProfile({
-                        ...profile, 
+                        ...profile,
                         profile: { ...profile.profile, experience: e.target.value }
                       })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -285,7 +302,7 @@ const Profile: React.FC = () => {
                   <textarea
                     value={profile.profile.bio}
                     onChange={(e) => setProfile({
-                      ...profile, 
+                      ...profile,
                       profile: { ...profile.profile, bio: e.target.value }
                     })}
                     rows={3}
@@ -314,33 +331,47 @@ const Profile: React.FC = () => {
                 <Book className="w-5 h-5 mr-2" />
                 Current Skills
               </h3>
-              
+
               {/* Add new skill */}
               <div className="mb-4 p-4 bg-gray-50 rounded-lg">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
-                  <input
-                    type="text"
-                    placeholder="Skill name"
-                    value={newSkill.name}
-                    onChange={(e) => setNewSkill({...newSkill, name: e.target.value})}
+                  <select
+                    value={newSkill.category}
+                    onChange={(e) => setNewSkill({ category: e.target.value, skillId: '', level: newSkill.level })}
                     className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
+                  >
+                    <option value="">Select Category</option>
+
+                    {Object.keys(skillsList).map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={newSkill.skillId}
+                    onChange={(e) => setNewSkill({ ...newSkill, skillId: e.target.value })}
+                    disabled={!newSkill.category}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select Skill</option>
+
+                    {newSkill.category &&
+                      skillsList[newSkill.category]?.map((skill: any) => (
+                        <option key={skill._id} value={skill._id}>
+                          {skill.name}
+                        </option>
+                      ))}
+                  </select>
                   <select
                     value={newSkill.level}
-                    onChange={(e) => setNewSkill({...newSkill, level: e.target.value})}
+                    onChange={(e) => setNewSkill({ ...newSkill, level: e.target.value })}
                     className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="beginner">Beginner</option>
                     <option value="intermediate">Intermediate</option>
                     <option value="advanced">Advanced</option>
                   </select>
-                  <input
-                    type="text"
-                    placeholder="Category"
-                    value={newSkill.category}
-                    onChange={(e) => setNewSkill({...newSkill, category: e.target.value})}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
                   <button
                     onClick={handleAddSkill}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
@@ -353,16 +384,16 @@ const Profile: React.FC = () => {
               <div className="flex flex-wrap gap-2">
                 {profile.skills.map((skill: Skill, index) => (
                   <div
-                    key={skill._id || index}
-                    className="flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
+                  key={skill._id || index}
+                  className="flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
                   >
                     <span>{skill.name} ({skill.level})</span>
                     <button
                       onClick={() => {
                         console.log("Clicked delete for", skill._id);
-                        handleRemoveSkill(skill._id);
+                        skill._id && handleRemoveSkill(skill._id);
                       }}
-                      
+
                       className="ml-2 text-blue-600 hover:text-blue-800"
                     >
                       <X className="w-3 h-3" />
@@ -378,7 +409,7 @@ const Profile: React.FC = () => {
                 <Target className="w-5 h-5 mr-2" />
                 Career Goals
               </h3>
-              
+
               {/* Add new goal */}
               <div className="mb-4 p-4 bg-gray-50 rounded-lg">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
@@ -386,19 +417,19 @@ const Profile: React.FC = () => {
                     type="text"
                     placeholder="Goal title"
                     value={newGoal.title}
-                    onChange={(e) => setNewGoal({...newGoal, title: e.target.value})}
+                    onChange={(e) => setNewGoal({ ...newGoal, title: e.target.value })}
                     className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
                   <input
                     type="text"
                     placeholder="Description"
                     value={newGoal.description}
-                    onChange={(e) => setNewGoal({...newGoal, description: e.target.value})}
+                    onChange={(e) => setNewGoal({ ...newGoal, description: e.target.value })}
                     className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
                   <select
                     value={newGoal.priority}
-                    onChange={(e) => setNewGoal({...newGoal, priority: e.target.value})}
+                    onChange={(e) => setNewGoal({ ...newGoal, priority: e.target.value })}
                     className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="low">Low</option>
@@ -427,7 +458,7 @@ const Profile: React.FC = () => {
                       </div>
                     </div>
                     <button
-                      onClick={() => handleRemoveGoal(goal._id)}
+                      onClick={() => goal._id && handleRemoveGoal(goal._id)}
                       className="text-red-600 hover:text-red-800"
                     >
                       <X className="w-4 h-4" />

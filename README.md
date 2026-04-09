@@ -114,9 +114,9 @@ ADZUNA_API_KEY=your-adzuna-api-key
 |---|---|---|
 | GET | `/api/users/profile` | Get profile |
 | PUT | `/api/users/profile` | Update profile |
-| POST | `/api/users/skills` | Add a skill |
-| PUT | `/api/users/skills/:id` | Update a skill |
-| DELETE | `/api/users/skills/:id` | Remove a skill |
+| POST | `/api/skills/user` | Add a skill |
+| PUT | `/api/skills/user/:id` | Update a skill |
+| DELETE | `/api/skills/user/:id` | Remove a skill |
 
 ### AI Chat
 | Method | Endpoint | Description |
