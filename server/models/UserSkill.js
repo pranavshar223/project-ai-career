@@ -1,4 +1,4 @@
-const mongoose = require('mongoose')
+const mongoose = require('mongoose');
 
 const userSkillSchema = new mongoose.Schema({
     userId: {
@@ -18,9 +18,13 @@ const userSkillSchema = new mongoose.Schema({
     }
 }, {
     timestamps: true
-})
+});
 
-// prevent duplicate skill per user
+// prevent duplicates
 userSkillSchema.index({ userId: 1, skillId: 1 }, { unique: true });
+
+// performance indexes
+userSkillSchema.index({ userId: 1 });
+userSkillSchema.index({ skillId: 1 });
 
 module.exports = mongoose.model("UserSkill", userSkillSchema);

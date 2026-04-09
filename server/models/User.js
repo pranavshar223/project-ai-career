@@ -37,22 +37,6 @@ const userSchema = new mongoose.Schema({
     },
     avatar: String
   },
-  skills: [{
-    name: {
-      type: String,
-      required: true
-    },
-    level: {
-      type: String,
-      enum: ['beginner', 'intermediate', 'advanced'],
-      default: 'beginner'
-    },
-    category: String,
-    addedAt: {
-      type: Date,
-      default: Date.now
-    }
-  }],
   careerGoals: [{
     title: String,
     description: String,
