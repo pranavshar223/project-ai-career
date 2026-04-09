@@ -8,12 +8,26 @@ const geminiService = require("../services/geminiService");
 
 const router = express.Router();
 
-// helper: detect greeting and verbosity
+// helper: detect greeting and verbosity (safer — no length-based brief rule)
 function detectVerbosityAndGreeting(text) {
   const s = (text || '').trim();
-  const isGreeting = /^(hi|hello|hey|hiya|hey there|good morning|good evening|namaste)([!.]*)?$/i.test(s);
-  const wantsBrief = /\b(short|brief|one line|concise|quick)\b/i.test(s) || s.length < 25;
-  const wantsDetailed = /\b(detailed|full|in depth|step by step|long)\b/i.test(s) || s.length > 500;
+  if (!s) return { mode: 'normal', isGreeting: false };
+
+  // strict greeting detection
+  const isGreeting = /^(hi|hello|hey|hiya|hey there|good morning|good evening|namaste)[!.,\s]*$/i.test(s);
+
+  // explicit brief cues
+  const wantsBrief =
+    /\b(short|brief|one line|one-line|concise|quick|tl;dr|tldr)\b/i.test(s) ||
+    /^\s*brief[:\-]\s*/i.test(s) ||
+    /\(brief\)$/i.test(s) ||
+    /in one (line|sentence)/i.test(s);
+
+  // explicit detailed cues
+  const wantsDetailed =
+    /\b(detailed|in depth|step by step|thorough|comprehensive|full|extensive)\b/i.test(s) ||
+    /give me a (detailed|comprehensive)/i.test(s);
+
   if (isGreeting) return { mode: 'brief', isGreeting: true };
   if (wantsBrief) return { mode: 'brief', isGreeting: false };
   if (wantsDetailed) return { mode: 'detailed', isGreeting: false };
@@ -105,11 +119,9 @@ router.post(
       // ✅ Generate AI chat response using geminiService
       // determine verbosity / greeting
       const verb = detectVerbosityAndGreeting(content);
-
-      // pass verbosity and isGreeting into the service context
       const aiResponse = await geminiService.generateResponse(content, {
         ...enhancedContext,
-        verbosity: verb.mode,    // 'brief' | 'normal' | 'detailed'
+        verbosity: verb.mode,     // 'brief' | 'normal' | 'detailed'
         isGreeting: verb.isGreeting
       });
 

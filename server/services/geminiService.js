@@ -210,12 +210,13 @@ Return ONLY this JSON:
 
     const prompt = this.buildChatPrompt(userMessage, context);
 
-    // choose token budget by verbosity
-    let maxTokens = 1024; // default reasonable size
-    if (context.verbosity === 'brief') maxTokens = 200;
-    if (context.verbosity === 'detailed') maxTokens = 4096;
+    // choose token budget by verbosity (safer brief budget)
+    let maxTokens = 1024; // default moderate
+    if (context.verbosity === 'brief') maxTokens = 350;    // short but safer
+    if (context.verbosity === 'detailed') maxTokens = 4096; // full detail
 
     try {
+      // first attempt
       const data = await this.callGemini(prompt, true, maxTokens);
       return {
         content: this.formatResponse(data.advice || data),
@@ -223,7 +224,31 @@ Return ONLY this JSON:
         source: 'gemini-api'
       };
     } catch (error) {
-      console.error('Chat response failed:', error.message || error);
+      console.error('Chat response failed (first attempt):', error.message || error);
+
+      // If error looks like truncated or parse error, retry once with large budget
+      const errMsg = (error && (error.message || '')).toString().toLowerCase();
+      const looksLikeParseError =
+        errMsg.includes('non-json') || errMsg.includes('non json') ||
+        errMsg.includes('parse') || errMsg.includes('invalid json') ||
+        errMsg.includes('empty response') || errMsg.includes('truncated');
+
+      if (looksLikeParseError && maxTokens < 4096) {
+        try {
+          console.warn('Retrying Gemini with larger token budget to avoid truncated/malformed JSON...');
+          const data2 = await this.callGemini(prompt, true, 4096);
+          return {
+            content: this.formatResponse(data2.advice || data2),
+            metadata: data2.metadata || {},
+            source: 'gemini-api'
+          };
+        } catch (err2) {
+          console.error('Chat response failed (retry):', err2.message || err2);
+          // fallthrough to fallback
+        }
+      }
+
+      // final fallback
       return this.generateEnhancedMockResponse(userMessage, context);
     }
   }
