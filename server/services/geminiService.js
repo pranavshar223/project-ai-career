@@ -9,10 +9,9 @@ class GeminiService {
     this.retryDelay = 1000;
   }
 
-  // ─────────────────────────────────────────────────────────────
   // CORE: Call Gemini API with any prompt, returns parsed JSON
-  // ─────────────────────────────────────────────────────────────
-  async callGemini(prompt, expectJson = true) {
+  // Now accepts maxOutputTokens as third parameter (default 4096)
+  async callGemini(prompt, expectJson = true, maxOutputTokens = 4096) {
     if (!this.apiKey) {
       throw new Error('GEMINI_API_KEY is not set');
     }
@@ -27,7 +26,7 @@ class GeminiService {
               temperature: 0.7,
               topK: 40,
               topP: 0.95,
-              maxOutputTokens: 4096,
+              maxOutputTokens: maxOutputTokens,
               candidateCount: 1,
               ...(expectJson && { responseMimeType: "application/json" })
             },
@@ -60,16 +59,14 @@ class GeminiService {
         }
 
       } catch (error) {
-        console.error(`Gemini attempt ${attempt} failed:`, error.message);
+        console.error(`Gemini attempt ${attempt} failed:`, error.message || error);
         if (attempt === this.maxRetries) throw error;
         await new Promise(r => setTimeout(r, this.retryDelay * Math.pow(2, attempt - 1)));
       }
     }
   }
 
-  // ─────────────────────────────────────────────────────────────
   // 1. GENERATE ROADMAP — Full structured roadmap from user goals
-  // ─────────────────────────────────────────────────────────────
   async generateRoadmap(careerGoal, context = {}) {
     const { userProfile = {}, targetRole, timeframe = '6-months' } = context;
 
@@ -135,14 +132,12 @@ STRICT JSON OUTPUT — return ONLY this JSON, no extra text:
       const data = await this.callGemini(prompt, true);
       return this.validateAndNormalizeRoadmap(data, careerGoal, totalWeeks);
     } catch (error) {
-      console.error('Gemini roadmap generation failed:', error.message);
+      console.error('Gemini roadmap generation failed:', error.message || error);
       throw new Error(`AI roadmap generation failed: ${error.message}`);
     }
   }
 
-  // ─────────────────────────────────────────────────────────────
   // 2. ADAPT ROADMAP — Regenerate based on missed/completed tasks
-  // ─────────────────────────────────────────────────────────────
   async adaptRoadmap(roadmap, triggerType, triggeredItem) {
     const completedItems = roadmap.items.filter(i => i.completed);
     const missedItems = roadmap.items.filter(i => i.status === 'missed');
@@ -160,10 +155,10 @@ CURRENT STATE:
 - Missed Items (${missedItems.length}): ${missedItems.map(i => i.title).join(', ') || 'None'}
 - Remaining Pending Items (${pendingItems.length}): ${pendingItems.map(i => `${i.title} (week ${i.weekNumber})`).join(', ') || 'None'}
 
-TRIGGER: ${triggerType === 'missed' 
-  ? `User MISSED the task: "${triggeredItem.title}". Generate 1-2 replacement/catch-up tasks that account for this gap.`
-  : `User COMPLETED: "${triggeredItem.title}". Generate 1-2 new follow-up tasks that build directly on what they just learned.`
-}
+TRIGGER: ${triggerType === 'missed'
+        ? `User MISSED the task: "${triggeredItem.title}". Generate 1-2 replacement/catch-up tasks that account for this gap.`
+        : `User COMPLETED: "${triggeredItem.title}". Generate 1-2 new follow-up tasks that build directly on what they just learned.`
+      }
 
 RULES:
 - New tasks must be specific and directly related to the trigger item
@@ -202,14 +197,12 @@ Return ONLY this JSON:
       const data = await this.callGemini(prompt, true);
       return data;
     } catch (error) {
-      console.error('Gemini roadmap adaptation failed:', error.message);
+      console.error('Gemini roadmap adaptation failed:', error.message || error);
       throw new Error(`AI adaptation failed: ${error.message}`);
     }
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // 3. CHAT — Conversational career guidance (unchanged purpose)
-  // ─────────────────────────────────────────────────────────────
+  // 3. CHAT — Conversational career guidance
   async generateResponse(userMessage, context = {}) {
     if (!this.apiKey) {
       return this.generateEnhancedMockResponse(userMessage, context);
@@ -217,22 +210,50 @@ Return ONLY this JSON:
 
     const prompt = this.buildChatPrompt(userMessage, context);
 
+    // choose token budget by verbosity (safer brief budget)
+    let maxTokens = 1024; // default moderate
+    if (context.verbosity === 'brief') maxTokens = 350;    // short but safer
+    if (context.verbosity === 'detailed') maxTokens = 4096; // full detail
+
     try {
-      const data = await this.callGemini(prompt, true);
+      // first attempt
+      const data = await this.callGemini(prompt, true, maxTokens);
       return {
         content: this.formatResponse(data.advice || data),
         metadata: data.metadata || {},
         source: 'gemini-api'
       };
     } catch (error) {
-      console.error('Chat response failed:', error.message);
+      console.error('Chat response failed (first attempt):', error.message || error);
+
+      // If error looks like truncated or parse error, retry once with large budget
+      const errMsg = (error && (error.message || '')).toString().toLowerCase();
+      const looksLikeParseError =
+        errMsg.includes('non-json') || errMsg.includes('non json') ||
+        errMsg.includes('parse') || errMsg.includes('invalid json') ||
+        errMsg.includes('empty response') || errMsg.includes('truncated');
+
+      if (looksLikeParseError && maxTokens < 4096) {
+        try {
+          console.warn('Retrying Gemini with larger token budget to avoid truncated/malformed JSON...');
+          const data2 = await this.callGemini(prompt, true, 4096);
+          return {
+            content: this.formatResponse(data2.advice || data2),
+            metadata: data2.metadata || {},
+            source: 'gemini-api'
+          };
+        } catch (err2) {
+          console.error('Chat response failed (retry):', err2.message || err2);
+          // fallthrough to fallback
+        }
+      }
+
+      // final fallback
       return this.generateEnhancedMockResponse(userMessage, context);
     }
   }
 
-  // ─────────────────────────────────────────────────────────────
   // VALIDATION: Ensure roadmap items match schema
-  // ─────────────────────────────────────────────────────────────
   validateAndNormalizeRoadmap(data, careerGoal, totalWeeks) {
     if (!data || !Array.isArray(data.items) || data.items.length === 0) {
       throw new Error('AI returned invalid roadmap structure');
@@ -265,26 +286,26 @@ Return ONLY this JSON:
         estimatedHours: item.estimatedHours || 0,
         resources: Array.isArray(item.resources)
           ? item.resources
-              .filter(r => r.title && r.url)
-              .map(r => {
-                const validTypes = ['course', 'article', 'video', 'book', 'documentation'];
-                // Map common AI-returned types to valid enum values
-                const typeMap = {
-                  tutorial: 'article',
-                  dataset: 'documentation',
-                  platform: 'course',
-                  guide: 'article',
-                  tool: 'documentation',
-                  project: 'article',
-                  website: 'article',
-                  repo: 'documentation',
-                  repository: 'documentation'
-                };
-                const normalizedType = validTypes.includes(r.type)
-                  ? r.type
-                  : (typeMap[r.type] || 'article');
-                return { ...r, type: normalizedType };
-              })
+            .filter(r => r.title && r.url)
+            .map(r => {
+              const validTypes = ['course', 'article', 'video', 'book', 'documentation'];
+              // Map common AI-returned types to valid enum values
+              const typeMap = {
+                tutorial: 'article',
+                dataset: 'documentation',
+                platform: 'course',
+                guide: 'article',
+                tool: 'documentation',
+                project: 'article',
+                website: 'article',
+                repo: 'documentation',
+                repository: 'documentation'
+              };
+              const normalizedType = validTypes.includes(r.type)
+                ? r.type
+                : (typeMap[r.type] || 'article');
+              return { ...r, type: normalizedType };
+            })
           : [],
         isAdapted: false,
         adaptedReason: null
@@ -301,11 +322,9 @@ Return ONLY this JSON:
     };
   }
 
-  // ─────────────────────────────────────────────────────────────
   // HELPERS
-  // ─────────────────────────────────────────────────────────────
   buildChatPrompt(userMessage, context) {
-    const { chatHistory = [], userProfile = {}, sessionContext = {} } = context;
+    const { chatHistory = [], userProfile = {}, sessionContext = {}, verbosity = 'normal', isGreeting = false } = context;
 
     let prompt = `You are an Advanced AI Career Advisor.
 
@@ -325,6 +344,15 @@ User Profile:
       prompt += '\n';
     }
 
+    // Behavior instructions based on verbosity / greeting
+    if (isGreeting || verbosity === 'brief') {
+      prompt += `INSTRUCTION: The user expects a SHORT reply. If this is just a greeting, reply with a concise friendly greeting only (1-2 short sentences, <=25 words). If the user asked for 'brief', answer in a single short paragraph. Avoid extra suggestions or long explanations.\n\n`;
+    } else if (verbosity === 'detailed') {
+      prompt += `INSTRUCTION: The user expects a DETAILED answer. Provide in-depth, step-by-step guidance, examples, and action items. Be thorough.\n\n`;
+    } else {
+      prompt += `INSTRUCTION: Provide a helpful response matching the user's request. Keep responses focused and not verbose unless the user asks for more detail.\n\n`;
+    }
+
     prompt += `User: "${userMessage}"
 
 Respond ONLY with this JSON:
@@ -336,7 +364,6 @@ Respond ONLY with this JSON:
     "sentiment": "positive|neutral|negative"
   }
 }`;
-
     return prompt;
   }
 
@@ -369,6 +396,14 @@ Respond ONLY with this JSON:
   }
 
   generateEnhancedMockResponse(userMessage, context) {
+    const brev = context?.verbosity === 'brief' || context?.isGreeting;
+    if (brev) {
+      return {
+        content: "Hi! 👋 How can I help you today?",
+        metadata: { intent: this.detectIntent(userMessage) },
+        source: 'mock'
+      };
+    }
     return {
       content: `I'm here to help with your career! Could you tell me more about your goals so I can provide personalized guidance?`,
       metadata: { intent: this.detectIntent(userMessage) },
