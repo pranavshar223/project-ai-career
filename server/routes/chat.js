@@ -103,7 +103,18 @@ router.post(
       // frontend can call /roadmaps/generate automatically
       let roadmapData = null;
       const lowerContent = content.toLowerCase();
-      if (aiResponse.metadata?.intent === "roadmap_request") {
+      
+      const hasRoadmapPhrase = lowerContent.includes("roadmap") ||
+                               lowerContent.includes("career plan") ||
+                               lowerContent.includes("learning path") ||
+                               lowerContent.includes("study plan");
+      
+      const intent = aiResponse.metadata?.intent;
+      
+      if (
+        intent === "roadmap_request" ||
+        ((!intent || intent === "general") && hasRoadmapPhrase)
+      ) {
         // Extract goal from message if possible
         const goalMatch = content.match(
           /(?:become|be|for|as)\s+(?:a\s+)?([a-zA-Z\s]+?)(?:\s|$|,|\.)/i

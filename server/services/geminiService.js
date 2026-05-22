@@ -367,11 +367,11 @@ Respond ONLY with this JSON:
 
   detectIntent(message) {
     const m = message.toLowerCase();
-    if (m.includes('roadmap') || m.includes('learning path')) return 'roadmap_request';
+    if (m.includes('roadmap') || m.includes('learning path') || m.includes('career plan') || m.includes('study plan')) return 'roadmap_request';
     if (m.includes('job') || m.includes('career opportunity')) return 'job_search';
     if (m.includes('skill') || m.includes('learn')) return 'skill_development';
     if (m.includes('interview')) return 'interview_prep';
-    return 'general_guidance';
+    return 'general';
   }
 
   generateEnhancedMockResponse(userMessage, context) {
