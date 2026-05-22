@@ -98,16 +98,22 @@ router.post(
 
       const processingTime = Date.now() - startTime;
 
-      // ✅ Detect roadmap intent from message keywords
-      // If user asks for a roadmap in chat, return roadmapData so
+      // ✅ Detect roadmap intent from AI metadata
+      // If AI detects a request for a roadmap, return roadmapData so
       // frontend can call /roadmaps/generate automatically
       let roadmapData = null;
       const lowerContent = content.toLowerCase();
+      
+      const hasRoadmapPhrase = lowerContent.includes("roadmap") ||
+                               lowerContent.includes("career plan") ||
+                               lowerContent.includes("learning path") ||
+                               lowerContent.includes("study plan");
+      
+      const intent = aiResponse.metadata?.intent;
+      
       if (
-        aiResponse.metadata?.intent === "roadmap_request" ||
-        lowerContent.includes("roadmap") ||
-        lowerContent.includes("career plan") ||
-        lowerContent.includes("learning path")
+        intent === "roadmap_request" ||
+        ((!intent || intent === "general") && hasRoadmapPhrase)
       ) {
         // Extract goal from message if possible
         const goalMatch = content.match(

@@ -327,11 +327,17 @@ User Profile:
 
     prompt += `User: "${userMessage}"
 
+CRITICAL INSTRUCTIONS FOR INTENT CLASSIFICATION:
+- "roadmap_request": Use ONLY if the user explicitly asks you to create, generate, or build a NEW career roadmap, learning path, or study plan. Do NOT use this if they just mention the word "roadmap" in passing.
+- "task_update": Use if the user wants to update, finish, complete, or modify an existing task or roadmap item.
+- "general": Use for general career advice, answering questions, or casual chat.
+- "skill_development" / "job_search": Use for those specific focused topics.
+
 Respond ONLY with this JSON:
 {
   "advice": "Your detailed guidance in markdown format",
   "metadata": {
-    "intent": "skill_development|job_search|roadmap_request|general",
+    "intent": "skill_development|job_search|roadmap_request|task_update|general",
     "actionItems": ["3-5 word action task"],
     "sentiment": "positive|neutral|negative"
   }
@@ -361,11 +367,11 @@ Respond ONLY with this JSON:
 
   detectIntent(message) {
     const m = message.toLowerCase();
-    if (m.includes('roadmap') || m.includes('learning path')) return 'roadmap_request';
+    if (m.includes('roadmap') || m.includes('learning path') || m.includes('career plan') || m.includes('study plan')) return 'roadmap_request';
     if (m.includes('job') || m.includes('career opportunity')) return 'job_search';
     if (m.includes('skill') || m.includes('learn')) return 'skill_development';
     if (m.includes('interview')) return 'interview_prep';
-    return 'general_guidance';
+    return 'general';
   }
 
   generateEnhancedMockResponse(userMessage, context) {
