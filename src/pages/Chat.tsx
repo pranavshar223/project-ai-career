@@ -1,18 +1,30 @@
 import React, { useState, useEffect, useCallback } from "react";
 import axios, { AxiosError } from "axios";
+import { useParams, useNavigate } from "react-router-dom";
 import ChatInterface from "../components/Chat/ChatInterface";
 import { ChatMessage, ApiChatMessage } from "../types";
 import { useAuth } from "../contexts/AuthContext";
 
 interface ChatProps {
-  onSessionsChange?: (sessions: { id: string; title: string; date: string }[]) => void;
+  onSessionUpdate?: (session: { id: string; title: string; date: string }) => void;
 }
 
-const Chat: React.FC<ChatProps> = ({ onSessionsChange }) => {
+const Chat: React.FC<ChatProps> = ({ onSessionUpdate }) => {
+  const { sessionId: routeSessionId } = useParams<{ sessionId: string }>();
+  const navigate = useNavigate();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [sessionId] = useState(`session_${Date.now()}`);
   const { token } = useAuth();
+  
+  const [localSessionId, setLocalSessionId] = useState(`session_${Date.now()}`);
+  const sessionId = routeSessionId || localSessionId;
+
+  useEffect(() => {
+    if (!routeSessionId) {
+      setLocalSessionId(`session_${Date.now()}`);
+      setMessages([]);
+    }
+  }, [routeSessionId]);
 
   const loadChatHistory = useCallback(async () => {
     try {
@@ -20,7 +32,7 @@ const Chat: React.FC<ChatProps> = ({ onSessionsChange }) => {
         headers: { Authorization: `Bearer ${token}` },
       });
       
-      if (response.data.messages) {
+      if (response.data.messages && response.data.messages.length > 0) {
         const formattedMessages: ChatMessage[] = response.data.messages.map(
           (msg: ApiChatMessage) => ({
             id: msg.id,
@@ -30,25 +42,14 @@ const Chat: React.FC<ChatProps> = ({ onSessionsChange }) => {
           })
         );
         setMessages(formattedMessages);
-
-        // Build session list for sidebar
-        if (onSessionsChange && formattedMessages.length > 0) {
-          const firstUserMsg = formattedMessages.find((m) => m.role === "user");
-          onSessionsChange([
-            {
-              id: sessionId,
-              title: firstUserMsg
-                ? firstUserMsg.content.slice(0, 40) + "..."
-                : "Session",
-              date: new Date().toLocaleDateString(),
-            },
-          ]);
-        }
+      } else {
+        setMessages([]);
       }
     } catch {
+      setMessages([]);
       console.log("No previous chat history for this session");
     }
-  }, [sessionId, token, onSessionsChange]);
+  }, [sessionId, token]);
 
   useEffect(() => {
     loadChatHistory();
@@ -65,17 +66,19 @@ const Chat: React.FC<ChatProps> = ({ onSessionsChange }) => {
     setMessages((prev) => {
       const updated = [...prev, userMessage];
       // Update sidebar session title from first user message
-      if (onSessionsChange && prev.filter((m) => m.role === "user").length === 0) {
-        onSessionsChange([
-          {
-            id: sessionId,
-            title: content.slice(0, 40) + (content.length > 40 ? "..." : ""),
-            date: new Date().toLocaleDateString(),
-          },
-        ]);
+      if (onSessionUpdate && prev.filter((m) => m.role === "user").length === 0) {
+        onSessionUpdate({
+          id: sessionId,
+          title: content.slice(0, 40) + (content.length > 40 ? "..." : ""),
+          date: new Date().toLocaleDateString(),
+        });
       }
       return updated;
     });
+
+    if (!routeSessionId) {
+      navigate(`/chat/${sessionId}`, { replace: true });
+    }
 
     setIsLoading(true);
 

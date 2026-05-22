@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import axios from 'axios';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Sidebar from './components/Layout/Sidebar';
 import Header from './components/Layout/Header';
@@ -63,14 +64,58 @@ const ChatWithSidebar: React.FC = () => {
   const [chatSessions, setChatSessions] = useState<
     { id: string; title: string; date: string }[]
   >([]);
+  const { token } = useAuth();
+
+  useEffect(() => {
+    const fetchSessions = async () => {
+      try {
+        const response = await axios.get('/chat/sessions', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.data.sessions) {
+          setChatSessions(
+            response.data.sessions.map((s: { sessionId: string; title: string; lastActivity: string }) => ({
+              id: s.sessionId,
+              title: s.title,
+              date: new Date(s.lastActivity).toLocaleDateString(),
+            }))
+          );
+        }
+      } catch (error) {
+        console.error('Error fetching sessions:', error);
+      }
+    };
+    if (token) fetchSessions();
+  }, [token]);
+
+  const handleSessionUpdate = useCallback((newSession: { id: string; title: string; date: string }) => {
+    setChatSessions((prev) => {
+      const exists = prev.find((s) => s.id === newSession.id);
+      if (exists) {
+        return prev.map(s => s.id === newSession.id ? newSession : s);
+      }
+      return [newSession, ...prev];
+    });
+  }, []);
+
+  const handleRenameSession = async (id: string, newTitle: string) => {
+    try {
+      await axios.put(`/chat/sessions/${id}`, { title: newTitle }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setChatSessions(prev => prev.map(s => s.id === id ? { ...s, title: newTitle } : s));
+    } catch (error) {
+      console.error('Error renaming session:', error);
+    }
+  };
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       <Header />
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar chatSessions={chatSessions} />
+        <Sidebar chatSessions={chatSessions} onRenameSession={handleRenameSession} />
         <main className="flex-1 overflow-y-auto bg-gray-50">
-          <Chat onSessionsChange={setChatSessions} />
+          <Chat onSessionUpdate={handleSessionUpdate} />
         </main>
       </div>
     </div>
@@ -113,6 +158,14 @@ const AppContent: React.FC = () => {
       />
       <Route
         path="/chat"
+        element={
+          <PrivateRoute>
+            <ChatWithSidebar />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/chat/:sessionId"
         element={
           <PrivateRoute>
             <ChatWithSidebar />
