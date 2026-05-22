@@ -11,6 +11,10 @@ const userSessionSchema = new mongoose.Schema({
     required: true,
     unique: true // Mongoose automatically creates an index here
   },
+  title: {
+    type: String,
+    default: ''
+  },
   startTime: {
     type: Date,
     default: Date.now

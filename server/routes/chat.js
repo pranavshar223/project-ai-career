@@ -260,21 +260,70 @@ router.get("/sessions", auth, async (req, res) => {
       },
       { $sort: { lastActivity: -1 } },
       { $limit: 20 },
+      {
+        $lookup: {
+          from: "usersessions",
+          localField: "_id",
+          foreignField: "sessionId",
+          as: "sessionData"
+        }
+      },
+      {
+        $unwind: {
+          path: "$sessionData",
+          preserveNullAndEmptyArrays: true
+        }
+      }
     ]);
 
     res.json({
-      sessions: sessions.map((session) => ({
-        sessionId: session._id,
-        lastMessage:
-          session.lastMessage.substring(0, 100) +
-          (session.lastMessage.length > 100 ? "..." : ""),
-        lastActivity: session.lastActivity,
-        messageCount: session.messageCount,
-      })),
+      sessions: sessions.map((session) => {
+        let title = session.sessionData?.title;
+        if (!title) {
+          title = session.lastMessage.substring(0, 100) +
+            (session.lastMessage.length > 100 ? "..." : "");
+        }
+        return {
+          sessionId: session._id,
+          title: title,
+          lastActivity: session.lastActivity,
+          messageCount: session.messageCount,
+        };
+      }),
     });
   } catch (error) {
     console.error("Get chat sessions error:", error);
     res.status(500).json({ message: "Error fetching chat sessions" });
+  }
+});
+
+// @route   PUT /api/chat/sessions/:sessionId
+router.put("/sessions/:sessionId", auth, async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const { title } = req.body;
+    
+    if (!title || typeof title !== 'string') {
+      return res.status(400).json({ message: "Valid title is required" });
+    }
+
+    // Verify the session actually exists for this user in ChatMessage
+    // This prevents arbitrarily creating session objects for non-existent chats
+    const sessionExists = await ChatMessage.exists({ sessionId, userId: req.user._id });
+    if (!sessionExists) {
+      return res.status(404).json({ message: "Chat session not found" });
+    }
+
+    const session = await UserSession.findOneAndUpdate(
+      { sessionId, userId: req.user._id },
+      { $set: { title: title.substring(0, 100) } },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+
+    res.json({ message: "Session renamed successfully", session });
+  } catch (error) {
+    console.error("Rename chat session error:", error);
+    res.status(500).json({ message: "Error renaming chat session" });
   }
 });
 

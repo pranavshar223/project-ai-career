@@ -10,11 +10,15 @@ import {
   SlidersHorizontal,
   MapPin,
   Search,
+  Pencil,
+  Check,
+  X,
 } from 'lucide-react';
 
 interface SidebarProps {
   // Chat history sessions passed from Chat page (optional)
   chatSessions?: { id: string; title: string; date: string }[];
+  onRenameSession?: (id: string, newTitle: string) => void;
   // Job filter state passed from Jobs page (optional)
   jobFilters?: {
     searchQuery: string;
@@ -25,11 +29,38 @@ interface SidebarProps {
   };
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ chatSessions, jobFilters }) => {
+const Sidebar: React.FC<SidebarProps> = ({ chatSessions, jobFilters, onRenameSession }) => {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  
+  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState('');
 
-  const isActive = (path: string) => location.pathname === path;
+  const handleEditClick = (e: React.MouseEvent, session: { id: string; title: string }) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setEditingSessionId(session.id);
+    setEditingTitle(session.title);
+  };
+
+  const handleSaveRename = (e?: React.MouseEvent | React.KeyboardEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (editingSessionId && editingTitle.trim() && onRenameSession) {
+      onRenameSession(editingSessionId, editingTitle.trim());
+    }
+    setEditingSessionId(null);
+  };
+
+  const handleCancelRename = (e: React.MouseEvent | React.KeyboardEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setEditingSessionId(null);
+  };
+
+  const isActive = (path: string) => location.pathname === path || (path === '/chat' && location.pathname.startsWith('/chat/'));
 
   const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -37,7 +68,7 @@ const Sidebar: React.FC<SidebarProps> = ({ chatSessions, jobFilters }) => {
     { name: 'Jobs', href: '/jobs', icon: Briefcase },
   ];
 
-  const isChat = location.pathname === '/chat';
+  const isChat = location.pathname.startsWith('/chat');
   const isJobs = location.pathname === '/jobs';
 
   return (
@@ -106,11 +137,45 @@ const Sidebar: React.FC<SidebarProps> = ({ chatSessions, jobFilters }) => {
             <ul className="space-y-1">
               {chatSessions && chatSessions.length > 0 ? (
                 chatSessions.map((session) => (
-                  <li key={session.id}>
-                    <button className="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors">
-                      <p className="truncate font-medium">{session.title}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">{session.date}</p>
-                    </button>
+                  <li key={session.id} className="relative group">
+                    {editingSessionId === session.id ? (
+                      <div className="flex items-center space-x-1 px-2 py-1.5 bg-gray-50 rounded-lg">
+                        <input
+                          type="text"
+                          value={editingTitle}
+                          onChange={(e) => setEditingTitle(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveRename(e);
+                            if (e.key === 'Escape') handleCancelRename(e);
+                          }}
+                          className="flex-1 min-w-0 bg-white border border-blue-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500"
+                          autoFocus
+                        />
+                        <button onClick={handleSaveRename} className="p-1 text-green-600 hover:bg-green-50 rounded">
+                          <Check className="w-4 h-4" />
+                        </button>
+                        <button onClick={handleCancelRename} className="p-1 text-red-600 hover:bg-red-50 rounded">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <Link
+                        to={`/chat/${session.id}`}
+                        className="block w-full text-left px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors pr-8"
+                      >
+                        <p className="truncate font-medium">{session.title}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">{session.date}</p>
+                      </Link>
+                    )}
+                    {editingSessionId !== session.id && (
+                      <button
+                        onClick={(e) => handleEditClick(e, session)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Rename chat"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </li>
                 ))
               ) : (
