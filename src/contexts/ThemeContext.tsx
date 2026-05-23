@@ -1,4 +1,7 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useLayoutEffect, useEffect, useState, ReactNode } from 'react';
+
+// Falls back to useEffect in non-browser environments (SSR, tests, prerender)
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 interface ThemeContextType {
   isDark: boolean;
@@ -21,19 +24,33 @@ interface ThemeProviderProps {
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [isDark, setIsDark] = useState<boolean>(() => {
-    const saved = localStorage.getItem('theme');
-    if (saved) return saved === 'dark';
+    // Guard: browser globals are not available in SSR/test environments
+    if (typeof window === 'undefined') return false;
+
+    try {
+      const saved = localStorage.getItem('theme');
+      if (saved) return saved === 'dark';
+    } catch {
+      // localStorage may be blocked (privacy mode, storage quota, etc.)
+    }
+
     // Respect OS preference on first visit
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
 
+  // Runs synchronously before paint — eliminates flash of wrong theme.
+  // Falls back to useEffect safely in non-browser environments.
+  useIsomorphicLayoutEffect(() => {
+    document.documentElement.classList.toggle('dark', isDark);
+  }, [isDark]);
+
+  // Persist preference after render (non-blocking)
   useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
+    try {
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    } catch {
+      // Silently ignore storage errors
     }
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
   }, [isDark]);
 
   const toggleTheme = () => setIsDark((prev) => !prev);
