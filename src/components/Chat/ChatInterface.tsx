@@ -34,18 +34,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col h-[600px]">
+    <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col h-[600px] transition-colors duration-200">
       {/* Header */}
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center space-x-3">
           <div className="flex items-center justify-center w-10 h-10 bg-blue-600 rounded-full">
             <Bot className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
               AI Career Assistant
             </h3>
-            <p className="text-sm text-gray-600">Powered by Google Gemini</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Powered by Google Gemini</p>
           </div>
         </div>
       </div>
@@ -54,18 +54,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 && (
           <div className="text-center py-8">
-            <Bot className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h4 className="text-lg font-medium text-gray-900 mb-2">
+            <Bot className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+            <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
               Welcome to your AI Career Assistant!
             </h4>
-            <p className="text-gray-600 mb-4">
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
               I'm here to help you plan your career path and identify skill
               gaps. Tell me about your goals, current skills, or ask any
               career-related questions.
             </p>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left">
-              <p className="text-blue-800 font-medium mb-2">Try asking me:</p>
-              <ul className="text-blue-700 text-sm space-y-1">
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 text-left">
+              <p className="text-blue-800 dark:text-blue-300 font-medium mb-2">Try asking me:</p>
+              <ul className="text-blue-700 dark:text-blue-400 text-sm space-y-1">
                 <li>• "I want to become a Data Scientist"</li>
                 <li>
                   • "What skills do I need for a Frontend Developer role?"
@@ -89,27 +89,27 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   <Bot className="w-4 h-4 text-white" />
                 </div>
               )}
-      <div
-        className={`px-4 py-2 rounded-lg ${
-          message.role === "user"
-            ? "bg-blue-600 text-white"
-            : "bg-gray-100 text-gray-900"
-        }`}
-      >
-        <div className="prose prose-slate max-w-none text-sm">
-          <ReactMarkdown>
-            {message.content}
-          </ReactMarkdown>
+        <div
+          className={`px-4 py-2 rounded-lg ${
+            message.role === "user"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+          }`}
+        >
+          <div className="prose prose-slate dark:prose-invert max-w-none text-sm">
+            <ReactMarkdown>
+              {message.content}
+            </ReactMarkdown>
+          </div>
         </div>
+        {message.role === "user" && (
+          <div className="flex items-center justify-center w-8 h-8 bg-gray-600 dark:bg-gray-500 rounded-full flex-shrink-0">
+            <User className="w-4 h-4 text-white" />
+          </div>
+        )}
       </div>
-      {message.role === "user" && (
-        <div className="flex items-center justify-center w-8 h-8 bg-gray-600 rounded-full flex-shrink-0">
-          <User className="w-4 h-4 text-white" />
-        </div>
-      )}
     </div>
-  </div>
-))}
+  ))}
 
         {isLoading && (
           <div className="flex justify-start">
@@ -117,10 +117,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               <div className="flex items-center justify-center w-8 h-8 bg-blue-600 rounded-full">
                 <Bot className="w-4 h-4 text-white" />
               </div>
-              <div className="bg-gray-100 px-4 py-2 rounded-lg">
+              <div className="bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-lg">
                 <div className="flex items-center space-x-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span className="text-sm text-gray-600">
+                  <Loader2 className="w-4 h-4 animate-spin text-gray-500 dark:text-gray-400" />
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
                     AI is thinking...
                   </span>
                 </div>
@@ -133,14 +133,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       </div>
 
       {/* Input */}
-      <div className="p-4 border-t border-gray-200">
+      <div className="p-4 border-t border-gray-200 dark:border-gray-700">
         <form onSubmit={handleSubmit} className="flex space-x-2">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask me about your career goals..."
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors"
             disabled={isLoading}
           />
           <button

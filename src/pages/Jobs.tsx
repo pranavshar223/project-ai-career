@@ -103,23 +103,26 @@ const Jobs: React.FC<JobsProps> = ({
   });
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-200">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Job Recommendations</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Job Recommendations</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
             Personalized job opportunities based on your skills and career goals
           </p>
         </div>
 
         {/* Results Summary */}
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center text-gray-600">
+          <div className="flex items-center text-gray-600 dark:text-gray-400">
             <Briefcase className="w-5 h-5 mr-2" />
             <span>{filteredJobs.length} jobs found</span>
           </div>
-          <select className="px-3 py-2 border border-gray-300 rounded-lg text-sm" aria-label="Sort jobs">
+          <select
+            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+            aria-label="Sort jobs"
+          >
             <option>Sort by Match Score</option>
             <option>Sort by Date Posted</option>
             <option>Sort by Salary</option>
@@ -132,15 +135,15 @@ const Jobs: React.FC<JobsProps> = ({
             {[...Array(4)].map((_, index) => (
               <div
                 key={index}
-                className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 animate-pulse"
+                className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 animate-pulse"
               >
-                <div className="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
-                <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
-                <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
-                <div className="h-4 bg-gray-200 rounded w-full mb-4"></div>
+                <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-4"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full mb-2"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full mb-4"></div>
                 <div className="flex justify-between">
-                  <div className="h-8 bg-gray-200 rounded w-24"></div>
-                  <div className="h-8 bg-gray-200 rounded w-20"></div>
+                  <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
+                  <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-20"></div>
                 </div>
               </div>
             ))}
@@ -155,9 +158,9 @@ const Jobs: React.FC<JobsProps> = ({
 
         {!isLoading && filteredJobs.length === 0 && (
           <div className="text-center py-12">
-            <Briefcase className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No jobs found</h3>
-            <p className="text-gray-600 mb-4">
+            <Briefcase className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No jobs found</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
               Try adjusting your search criteria or check back later for new opportunities.
             </p>
             <button

@@ -8,10 +8,10 @@ interface SkillGapChartProps {
 
 const SkillGapChart: React.FC<SkillGapChartProps> = ({ data }) => {
   return (
-    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+    <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 transition-colors duration-200">
       <div className="mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">Skill Gap Analysis</h3>
-        <p className="text-sm text-gray-600">Your current skills vs. required for your career goal</p>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Skill Gap Analysis</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400">Your current skills vs. required for your career goal</p>
       </div>
       
       <div className="h-80">

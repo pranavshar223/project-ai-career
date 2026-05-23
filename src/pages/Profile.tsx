@@ -151,52 +151,54 @@ const Profile: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center transition-colors duration-200">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your profile...</p>
+          <p className="text-gray-600 dark:text-gray-400">Loading your profile...</p>
         </div>
       </div>
     );
   }
 
+  const inputClass = "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none transition-colors";
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-200">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Profile Settings</h1>
-          <p className="text-gray-600 mt-2">Manage your personal information and career preferences</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Profile Settings</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">Manage your personal information and career preferences</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Profile Card */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 h-fit">
+          <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-fit transition-colors duration-200">
             <div className="text-center">
               <div className="flex items-center justify-center w-20 h-20 bg-blue-600 text-white rounded-full text-2xl font-bold mx-auto mb-4">
                 {profile.name.charAt(0).toUpperCase()}
               </div>
-              <h2 className="text-xl font-semibold text-gray-900">{profile.name}</h2>
-              <p className="text-gray-600 mb-4">{profile.email}</p>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{profile.name}</h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">{profile.email}</p>
               <span className={`inline-block px-3 py-1 text-sm rounded-full ${
                 profile.background === 'student' 
-                  ? 'bg-green-100 text-green-800' 
-                  : 'bg-blue-100 text-blue-800'
+                  ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' 
+                  : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400'
               }`}>
                 {profile.background === 'student' ? 'Student' : 'Professional'}
               </span>
             </div>
 
             <div className="mt-6 space-y-3">
-              <div className="flex items-center text-gray-600">
+              <div className="flex items-center text-gray-600 dark:text-gray-400">
                 <Calendar className="w-4 h-4 mr-2" />
                 <span className="text-sm">Joined {new Date(profile.createdAt).toLocaleDateString()}</span>
               </div>
-              <div className="flex items-center text-gray-600">
+              <div className="flex items-center text-gray-600 dark:text-gray-400">
                 <Book className="w-4 h-4 mr-2" />
                 <span className="text-sm">{profile.profile.experience} experience</span>
               </div>
-              <div className="flex items-center text-gray-600">
+              <div className="flex items-center text-gray-600 dark:text-gray-400">
                 <Target className="w-4 h-4 mr-2" />
                 <span className="text-sm">{profile.streak.current} day streak</span>
               </div>
@@ -206,9 +208,9 @@ const Profile: React.FC = () => {
           {/* Right Column - Profile Details */}
           <div className="lg:col-span-2 space-y-6">
             {/* Basic Information */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 transition-colors duration-200">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
                   <User className="w-5 h-5 mr-2" />
                   Basic Information
                 </h3>
@@ -222,26 +224,26 @@ const Profile: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
                   {isEditing ? (
                     <input
                       type="text"
                       value={profile.name}
                       onChange={(e) => setProfile({...profile, name: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className={inputClass}
                     />
                   ) : (
-                    <p className="text-gray-900">{profile.name}</p>
+                    <p className="text-gray-900 dark:text-gray-100">{profile.name}</p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                  <p className="text-gray-900">{profile.email}</p>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                  <p className="text-gray-900 dark:text-gray-100">{profile.email}</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location</label>
                   {isEditing ? (
                     <input
                       type="text"
@@ -250,15 +252,15 @@ const Profile: React.FC = () => {
                         ...profile, 
                         profile: { ...profile.profile, location: e.target.value }
                       })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className={inputClass}
                     />
                   ) : (
-                    <p className="text-gray-900">{profile.profile.location || 'Not specified'}</p>
+                    <p className="text-gray-900 dark:text-gray-100">{profile.profile.location || 'Not specified'}</p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Experience</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Experience</label>
                   {isEditing ? (
                     <select
                       value={profile.profile.experience}
@@ -266,7 +268,7 @@ const Profile: React.FC = () => {
                         ...profile, 
                         profile: { ...profile.profile, experience: e.target.value }
                       })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className={inputClass}
                     >
                       <option value="0-1 years">0-1 years</option>
                       <option value="2 years">2 years</option>
@@ -274,13 +276,13 @@ const Profile: React.FC = () => {
                       <option value="5+ years">5+ years</option>
                     </select>
                   ) : (
-                    <p className="text-gray-900">{profile.profile.experience}</p>
+                    <p className="text-gray-900 dark:text-gray-100">{profile.profile.experience}</p>
                   )}
                 </div>
               </div>
 
               <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bio</label>
                 {isEditing ? (
                   <textarea
                     value={profile.profile.bio}
@@ -289,10 +291,10 @@ const Profile: React.FC = () => {
                       profile: { ...profile.profile, bio: e.target.value }
                     })}
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className={inputClass}
                   />
                 ) : (
-                  <p className="text-gray-900">{profile.profile.bio || 'No bio added yet'}</p>
+                  <p className="text-gray-900 dark:text-gray-100">{profile.profile.bio || 'No bio added yet'}</p>
                 )}
               </div>
 
@@ -309,26 +311,26 @@ const Profile: React.FC = () => {
             </div>
 
             {/* Skills */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 transition-colors duration-200">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
                 <Book className="w-5 h-5 mr-2" />
                 Current Skills
               </h3>
               
               {/* Add new skill */}
-              <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+              <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
                   <input
                     type="text"
                     placeholder="Skill name"
                     value={newSkill.name}
                     onChange={(e) => setNewSkill({...newSkill, name: e.target.value})}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className={inputClass}
                   />
                   <select
                     value={newSkill.level}
                     onChange={(e) => setNewSkill({...newSkill, level: e.target.value})}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className={inputClass}
                   >
                     <option value="beginner">Beginner</option>
                     <option value="intermediate">Intermediate</option>
@@ -339,7 +341,7 @@ const Profile: React.FC = () => {
                     placeholder="Category"
                     value={newSkill.category}
                     onChange={(e) => setNewSkill({...newSkill, category: e.target.value})}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className={inputClass}
                   />
                   <button
                     onClick={handleAddSkill}
@@ -354,7 +356,7 @@ const Profile: React.FC = () => {
                 {profile.skills.map((skill: Skill, index) => (
                   <div
                     key={skill._id || index}
-                    className="flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
+                    className="flex items-center px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full text-sm font-medium"
                   >
                     <span>{skill.name} ({skill.level})</span>
                     <button
@@ -362,8 +364,7 @@ const Profile: React.FC = () => {
                         console.log("Clicked delete for", skill._id);
                         handleRemoveSkill(skill._id);
                       }}
-                      
-                      className="ml-2 text-blue-600 hover:text-blue-800"
+                      className="ml-2 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200"
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -373,33 +374,33 @@ const Profile: React.FC = () => {
             </div>
 
             {/* Career Goals */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 transition-colors duration-200">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
                 <Target className="w-5 h-5 mr-2" />
                 Career Goals
               </h3>
               
               {/* Add new goal */}
-              <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+              <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
                   <input
                     type="text"
                     placeholder="Goal title"
                     value={newGoal.title}
                     onChange={(e) => setNewGoal({...newGoal, title: e.target.value})}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className={inputClass}
                   />
                   <input
                     type="text"
                     placeholder="Description"
                     value={newGoal.description}
                     onChange={(e) => setNewGoal({...newGoal, description: e.target.value})}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className={inputClass}
                   />
                   <select
                     value={newGoal.priority}
                     onChange={(e) => setNewGoal({...newGoal, priority: e.target.value})}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className={inputClass}
                   >
                     <option value="low">Low</option>
                     <option value="medium">Medium</option>
@@ -416,19 +417,19 @@ const Profile: React.FC = () => {
 
               <div className="space-y-2">
                 {profile.careerGoals.map((goal: CareerGoal, index) => (
-                  <div key={goal._id || index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div key={goal._id || index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                     <div className="flex items-center">
                       <Award className="w-4 h-4 text-yellow-500 mr-2" />
                       <div>
-                        <span className="text-gray-900 font-medium">{goal.title}</span>
+                        <span className="text-gray-900 dark:text-gray-100 font-medium">{goal.title}</span>
                         {goal.description && (
-                          <p className="text-sm text-gray-600">{goal.description}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">{goal.description}</p>
                         )}
                       </div>
                     </div>
                     <button
                       onClick={() => handleRemoveGoal(goal._id)}
-                      className="text-red-600 hover:text-red-800"
+                      className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
                     >
                       <X className="w-4 h-4" />
                     </button>

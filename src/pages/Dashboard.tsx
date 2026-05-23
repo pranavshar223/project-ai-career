@@ -170,7 +170,7 @@ const Dashboard: React.FC = () => {
       value: userProfile?.skills?.length?.toString() || "0",
       change: "+2 this week",
       icon: BookOpen,
-      color: "text-blue-600 bg-blue-100",
+      color: "text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400",
     },
     {
       title: "Career Progress",
@@ -179,44 +179,44 @@ const Dashboard: React.FC = () => {
         : "0%",
       change: `${activeRoadmap?.progress?.completed || 0} tasks done`,
       icon: TrendingUp,
-      color: "text-green-600 bg-green-100",
+      color: "text-green-600 bg-green-100 dark:bg-green-900/30 dark:text-green-400",
     },
     {
       title: "Tasks Missed",
       value: activeRoadmap?.progress?.missed?.toString() || "0",
       change: "AI will adapt",
       icon: AlertCircle,
-      color: "text-red-600 bg-red-100",
+      color: "text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400",
     },
     {
       title: "Chat Messages",
       value: analytics?.overview?.totalChatMessages?.toString() || "0",
       change: "+3 this week",
       icon: Users,
-      color: "text-orange-600 bg-orange-100",
+      color: "text-orange-600 bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400",
     },
   ];
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center transition-colors duration-200">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your dashboard...</p>
+          <p className="text-gray-600 dark:text-gray-400">Loading your dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Career Dashboard</h1>
-            <p className="text-gray-600 mt-2">Track your progress and stay on top of your career goals</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Career Dashboard</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">Track your progress and stay on top of your career goals</p>
           </div>
           <button
             onClick={() => setShowGenerateForm(true)}
@@ -229,21 +229,21 @@ const Dashboard: React.FC = () => {
 
         {/* Adaptation Message */}
         {adaptationMessage && (
-          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-3">
-            <RefreshCw className={`w-5 h-5 text-blue-600 ${isAdapting ? 'animate-spin' : ''}`} />
-            <p className="text-blue-800 font-medium">{adaptationMessage}</p>
+          <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl flex items-center gap-3">
+            <RefreshCw className={`w-5 h-5 text-blue-600 dark:text-blue-400 ${isAdapting ? 'animate-spin' : ''}`} />
+            <p className="text-blue-800 dark:text-blue-300 font-medium">{adaptationMessage}</p>
           </div>
         )}
 
         {/* Generate Roadmap Modal */}
         {showGenerateForm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md mx-4">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Generate Your Roadmap</h2>
+            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-8 w-full max-w-md mx-4 border border-gray-200 dark:border-gray-700">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Generate Your Roadmap</h2>
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Career Goal <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -251,29 +251,29 @@ const Dashboard: React.FC = () => {
                     placeholder="e.g. Data Scientist, Full Stack Developer"
                     value={generateForm.careerGoal}
                     onChange={e => setGenerateForm(f => ({ ...f, careerGoal: e.target.value }))}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Target Role <span className="text-gray-400">(optional)</span>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Target Role <span className="text-gray-400 dark:text-gray-500">(optional)</span>
                   </label>
                   <input
                     type="text"
                     placeholder="e.g. ML Engineer at Google"
                     value={generateForm.targetRole}
                     onChange={e => setGenerateForm(f => ({ ...f, targetRole: e.target.value }))}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Timeframe</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Timeframe</label>
                   <select
                     value={generateForm.timeframe}
                     onChange={e => setGenerateForm(f => ({ ...f, timeframe: e.target.value }))}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="3-months">3 Months</option>
                     <option value="6-months">6 Months</option>
@@ -283,7 +283,7 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 {generateError && (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                  <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-400 text-sm">
                     {generateError}
                   </div>
                 )}
@@ -292,7 +292,7 @@ const Dashboard: React.FC = () => {
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={() => { setShowGenerateForm(false); setGenerateError(null); }}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                 >
                   Cancel
                 </button>
@@ -316,7 +316,7 @@ const Dashboard: React.FC = () => {
               </div>
 
               {isGenerating && (
-                <p className="text-center text-sm text-gray-500 mt-3">
+                <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-3">
                   AI is building your personalized roadmap... this may take 10-20 seconds.
                 </p>
               )}
@@ -327,12 +327,12 @@ const Dashboard: React.FC = () => {
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {stats.map((stat, index) => (
-            <div key={index} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div key={index} className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 transition-colors duration-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
-                  <p className="text-sm text-green-600 mt-1">{stat.change}</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{stat.title}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stat.value}</p>
+                  <p className="text-sm text-green-600 dark:text-green-400 mt-1">{stat.change}</p>
                 </div>
                 <div className={`p-3 rounded-lg ${stat.color}`}>
                   <stat.icon className="w-6 h-6" />
@@ -353,8 +353,8 @@ const Dashboard: React.FC = () => {
                 {/* Roadmap header with adapt controls */}
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h2 className="text-xl font-semibold text-gray-900">{activeRoadmap?.title}</h2>
-                    <p className="text-sm text-gray-500">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{activeRoadmap?.title}</h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
                       {activeRoadmap?.progress?.completed}/{activeRoadmap?.progress?.total} tasks completed
                       {activeRoadmap?.progress?.missed > 0 && (
                         <span className="ml-2 text-red-500">· {activeRoadmap.progress.missed} missed</span>
@@ -362,7 +362,7 @@ const Dashboard: React.FC = () => {
                     </p>
                   </div>
                   {activeRoadmap?.lastAdaptedAt && (
-                    <span className="text-xs text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                    <span className="text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-3 py-1 rounded-full">
                       AI adapted {new Date(activeRoadmap.lastAdaptedAt).toLocaleDateString()}
                     </span>
                   )}
@@ -370,10 +370,10 @@ const Dashboard: React.FC = () => {
 
                 {/* Missed task alert with adapt button */}
                 {roadmapItems.some((i: RoadmapItem) => (i as RoadmapItem & { status?: string }).status === 'missed') && (
-                  <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-xl flex items-center justify-between">
+                  <div className="mb-4 p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <AlertCircle className="w-5 h-5 text-orange-500" />
-                      <p className="text-orange-800 text-sm font-medium">
+                      <p className="text-orange-800 dark:text-orange-300 text-sm font-medium">
                         You have missed tasks. Let AI adapt your roadmap.
                       </p>
                     </div>
@@ -397,12 +397,12 @@ const Dashboard: React.FC = () => {
                 />
               </div>
             ) : (
-              <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200 text-center">
-                <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Target className="w-8 h-8 text-blue-600" />
+              <div className="bg-white dark:bg-gray-900 p-8 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 text-center transition-colors duration-200">
+                <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Target className="w-8 h-8 text-blue-600 dark:text-blue-400" />
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No Roadmap Yet</h3>
-                <p className="text-gray-600 mb-6">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No Roadmap Yet</h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-6">
                   Generate your personalized AI career roadmap to get started.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -414,7 +414,7 @@ const Dashboard: React.FC = () => {
                   </button>
                   <Link
                     to="/chat"
-                    className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                   >
                     Ask AI in Chat
                   </Link>
@@ -435,8 +435,8 @@ const Dashboard: React.FC = () => {
 
             {/* Roadmap Phase Progress */}
             {roadmapItems.length > 0 && (
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Phase Progress</h3>
+              <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 transition-colors duration-200">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Phase Progress</h3>
                 {['foundation', 'development', 'advanced', 'professional'].map(phase => {
                   const phaseItems = roadmapItems.filter((i: RoadmapItem) => (i as RoadmapItem & { phase?: string }).phase === phase);
                   if (phaseItems.length === 0) return null;
@@ -445,10 +445,10 @@ const Dashboard: React.FC = () => {
                   return (
                     <div key={phase} className="mb-4">
                       <div className="flex justify-between text-sm mb-1">
-                        <span className="capitalize font-medium text-gray-700">{phase}</span>
-                        <span className="text-gray-500">{done}/{phaseItems.length}</span>
+                        <span className="capitalize font-medium text-gray-700 dark:text-gray-300">{phase}</span>
+                        <span className="text-gray-500 dark:text-gray-400">{done}/{phaseItems.length}</span>
                       </div>
-                      <div className="h-2 bg-gray-100 rounded-full">
+                      <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full">
                         <div
                           className="h-2 bg-blue-500 rounded-full transition-all duration-500"
                           style={{ width: `${pct}%` }}
@@ -461,25 +461,25 @@ const Dashboard: React.FC = () => {
             )}
 
             {/* Quick Actions */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+            <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 transition-colors duration-200">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
               <div className="space-y-3">
                 <Link to="/profile">
-                  <button className="w-full text-left p-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">
-                    <div className="font-medium text-blue-900">Update Skills</div>
-                    <div className="text-sm text-blue-700">Add new skills you've learned</div>
+                  <button className="w-full text-left p-3 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-lg transition-colors">
+                    <div className="font-medium text-blue-900 dark:text-blue-300">Update Skills</div>
+                    <div className="text-sm text-blue-700 dark:text-blue-400">Add new skills you've learned</div>
                   </button>
                 </Link>
                 <Link to="/jobs">
-                  <button className="w-full text-left p-3 bg-green-50 hover:bg-green-100 rounded-lg transition-colors">
-                    <div className="font-medium text-green-900">Find Jobs</div>
-                    <div className="text-sm text-green-700">Browse matched opportunities</div>
+                  <button className="w-full text-left p-3 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/40 rounded-lg transition-colors">
+                    <div className="font-medium text-green-900 dark:text-green-300">Find Jobs</div>
+                    <div className="text-sm text-green-700 dark:text-green-400">Browse matched opportunities</div>
                   </button>
                 </Link>
                 <Link to="/chat">
-                  <button className="w-full text-left p-3 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors">
-                    <div className="font-medium text-purple-900">Chat with AI</div>
-                    <div className="text-sm text-purple-700">Get career guidance</div>
+                  <button className="w-full text-left p-3 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/40 rounded-lg transition-colors">
+                    <div className="font-medium text-purple-900 dark:text-purple-300">Chat with AI</div>
+                    <div className="text-sm text-purple-700 dark:text-purple-400">Get career guidance</div>
                   </button>
                 </Link>
               </div>

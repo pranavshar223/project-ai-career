@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import axios from 'axios';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import Sidebar from './components/Layout/Sidebar';
 import Header from './components/Layout/Header';
 import AuthForm from './components/Auth/AuthForm';
@@ -47,7 +48,7 @@ const JobsWithSidebar: React.FC = () => {
             onSearch: handleSearch,
           }}
         />
-        <main className="flex-1 overflow-y-auto bg-gray-50">
+        <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-950 transition-colors duration-200">
           <Jobs
             searchQuery={searchQuery}
             location={location}
@@ -114,7 +115,7 @@ const ChatWithSidebar: React.FC = () => {
       <Header />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar chatSessions={chatSessions} onRenameSession={handleRenameSession} />
-        <main className="flex-1 overflow-y-auto bg-gray-50">
+        <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-950 transition-colors duration-200">
           <Chat onSessionUpdate={handleSessionUpdate} />
         </main>
       </div>
@@ -128,7 +129,7 @@ const DefaultLayout: React.FC<RouteProps> = ({ children }) => (
     <Header />
     <div className="flex flex-1 overflow-hidden">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto bg-gray-50">
+      <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-950 transition-colors duration-200">
         {children}
       </main>
     </div>
@@ -197,9 +198,11 @@ const AppContent: React.FC = () => {
 
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

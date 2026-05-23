@@ -137,11 +137,11 @@ const Chat: React.FC<ChatProps> = ({ onSessionUpdate }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-200">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">AI Career Assistant</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">AI Career Assistant</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
             Get personalized career guidance powered by AI. Ask about skills,
             roadmaps, or career planning.
           </p>
