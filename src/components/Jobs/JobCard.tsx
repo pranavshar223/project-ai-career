@@ -9,17 +9,17 @@ interface JobCardProps {
 
 const JobCard: React.FC<JobCardProps> = ({ job }) => {
   const getMatchScoreColor = (score: number) => {
-    if (score >= 90) return 'text-green-600 bg-green-100';
-    if (score >= 70) return 'text-yellow-600 bg-yellow-100';
-    return 'text-red-600 bg-red-100';
+    if (score >= 90) return 'text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30';
+    if (score >= 70) return 'text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/30';
+    return 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30';
   };
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+    <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow duration-200">
       <div className="flex items-start justify-between mb-4">
         <div className="flex-grow">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">{job.title}</h3>
-          <p className="text-gray-700 font-medium mb-2">{job.company}</p>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{job.title}</h3>
+          <p className="text-gray-700 dark:text-gray-300 font-medium mb-2">{job.company}</p>
         </div>
         <div className={`px-3 py-1 rounded-full text-sm font-medium ${getMatchScoreColor(job.matchScore)}`}>
           <div className="flex items-center">
@@ -29,7 +29,7 @@ const JobCard: React.FC<JobCardProps> = ({ job }) => {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-4 text-sm text-gray-600 mb-4">
+      <div className="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400 mb-4">
         <div className="flex items-center">
           <MapPin className="w-4 h-4 mr-1" />
           {job.location}
@@ -46,16 +46,16 @@ const JobCard: React.FC<JobCardProps> = ({ job }) => {
         </div>
       </div>
 
-      <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+      <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-3">
         {job.description}
       </p>
 
       <div className="flex justify-between items-center">
         <div className="flex space-x-2">
-          <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
+          <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs rounded-full">
             Remote Friendly
           </span>
-          <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+          <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-xs rounded-full">
             Full-time
           </span>
         </div>
