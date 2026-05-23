@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useLayoutEffect, useEffect, useState, ReactNode } from 'react';
 
 interface ThemeContextType {
   isDark: boolean;
@@ -27,12 +27,13 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
 
+  // Run before paint — eliminates flash of wrong theme
+  useLayoutEffect(() => {
+    document.documentElement.classList.toggle('dark', isDark);
+  }, [isDark]);
+
+  // Persist preference after render (non-blocking)
   useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
   }, [isDark]);
 
