@@ -13,6 +13,8 @@ import {
   Pencil,
   Check,
   X,
+  ListTodo,
+  BookOpen
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -66,6 +68,8 @@ const Sidebar: React.FC<SidebarProps> = ({ chatSessions, jobFilters, onRenameSes
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Chat', href: '/chat', icon: MessageSquare },
     { name: 'Jobs', href: '/jobs', icon: Briefcase },
+    { name: 'Tasks', href: '/tasks', icon: ListTodo },
+    { name: 'Resources', href: '/resources', icon: BookOpen },
   ];
 
   const isChat = location.pathname.startsWith('/chat');

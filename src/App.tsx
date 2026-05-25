@@ -11,6 +11,8 @@ import Chat from './pages/Chat';
 import Jobs from './pages/Jobs';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
+import Tasks from './pages/Tasks';
+import Resources from './pages/Resources';
 
 interface RouteProps {
   children: React.ReactNode;
@@ -198,6 +200,26 @@ const AppContent: React.FC = () => {
           <PrivateRoute>
             <DefaultLayout>
               <Settings />
+            </DefaultLayout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/tasks"
+        element={
+          <PrivateRoute>
+            <DefaultLayout>
+              <Tasks />
+            </DefaultLayout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/resources"
+        element={
+          <PrivateRoute>
+            <DefaultLayout>
+              <Resources />
             </DefaultLayout>
           </PrivateRoute>
         }
