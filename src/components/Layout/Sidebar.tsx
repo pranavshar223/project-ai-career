@@ -62,7 +62,7 @@ const Sidebar: React.FC<SidebarProps> = ({ chatSessions, jobFilters, onRenameSes
     setEditingSessionId(null);
   };
 
-  const isActive = (path: string) => location.pathname === path || (path === '/chat' && location.pathname.startsWith('/chat/'));
+  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(`${path}/`);
 
   const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
