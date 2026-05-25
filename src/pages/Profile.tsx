@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { User, Calendar, Book, Award, Target, Plus, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import type { Skill, CareerGoal } from '../types';
 
 const Profile: React.FC = () => {
   const { token } = useAuth();
