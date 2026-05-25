@@ -366,28 +366,26 @@ router.put('/goals/:goalId', auth, [
 // @access  Private
 router.delete('/goals/:goalId', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
-    const goal = user.careerGoals.id(req.params.goalId);
-    
-    if (!goal) {
-      return res.status(404).json({
-        message: 'Career goal not found'
-      });
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { $pull: { careerGoals: { _id: req.params.goalId } } },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
     }
 
-    goal.remove();
-    await user.save();
-
     res.json({
-      message: 'Career goal removed successfully'
+      message: 'Career goal removed successfully',
+      careerGoals: user.careerGoals
     });
   } catch (error) {
     console.error('Remove goal error:', error);
-    res.status(500).json({
-      message: 'Error removing career goal'
-    });
+    res.status(500).json({ message: 'Error removing career goal' });
   }
 });
+
 
 // @route   PUT /api/users/preferences
 // @desc    Update user preferences

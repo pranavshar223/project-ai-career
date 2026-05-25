@@ -17,6 +17,7 @@ export interface CareerGoal {
   _id?: string;
   title: string;
   description: string;
+  priority?: 'low' | 'medium' | 'high';
   targetDate?: Date;
 }
 
