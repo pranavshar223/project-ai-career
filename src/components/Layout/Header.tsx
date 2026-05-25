@@ -1,12 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { User, LogOut, Brain, Settings, ChevronDown, Moon, Sun } from 'lucide-react';
+import { User, LogOut, Brain, Settings, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useTheme } from '../../contexts/ThemeContext';
 
 const Header: React.FC = () => {
   const { user, logout } = useAuth();
-  const { isDark, toggleTheme } = useTheme();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -25,27 +23,11 @@ const Header: React.FC = () => {
 
       {/* Logo */}
       <Link to="/dashboard" className="flex items-center space-x-2">
-        <div className="flex items-center justify-center w-8 h-8 bg-blue-600 rounded-lg">
-          <Brain className="w-5 h-5 text-white" />
-        </div>
-        <span className="text-xl font-bold text-gray-900 dark:text-white">AI Career Assistant</span>
+        <img src="/arohan%20gb-remove.JPG" alt="Arohan.AI Logo" className="w-8 h-8 object-contain" />
+        <span className="text-xl font-bold text-gray-900 dark:text-white">Arohan.AI</span>
       </Link>
 
       <div className="flex items-center space-x-3">
-        {/* Dark Mode Toggle */}
-        <button
-          id="theme-toggle"
-          onClick={toggleTheme}
-          title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-          className="flex items-center justify-center w-9 h-9 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
-        >
-          {isDark ? (
-            <Sun className="w-5 h-5 text-yellow-400" />
-          ) : (
-            <Moon className="w-5 h-5" />
-          )}
-        </button>
-
         {/* User Dropdown */}
         {user && (
           <div className="relative" ref={dropdownRef}>
@@ -77,7 +59,7 @@ const Header: React.FC = () => {
                   <span>My Profile</span>
                 </Link>
                 <Link
-                  to="/profile"
+                  to="/settings"
                   onClick={() => setDropdownOpen(false)}
                   className="flex items-center space-x-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >

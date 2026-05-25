@@ -6,7 +6,8 @@ import { useAuth } from '../contexts/AuthContext';
 const Profile: React.FC = () => {
   const { token } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [newSkill, setNewSkill] = useState({ name: '', level: 'beginner', category: 'general' });
   const [newGoal, setNewGoal] = useState({ title: '', description: '', priority: 'medium' });
   
@@ -36,10 +37,10 @@ const Profile: React.FC = () => {
     createdAt: new Date(),
   });
 
-  const loadProfile = useCallback(async () => {
+  const loadProfile = useCallback(async (silent = false) => {
     if (!token) return;
     
-    setIsLoading(true);
+    if (!silent) setIsInitialLoading(true);
     try {
       const response = await axios.get('/users/profile', {
         headers: { Authorization: `Bearer ${token}` }
@@ -72,7 +73,7 @@ const Profile: React.FC = () => {
     } catch (error) {
       console.error('Error loading profile:', error);
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsInitialLoading(false);
     }
   }, [token]);
 
@@ -97,59 +98,84 @@ const Profile: React.FC = () => {
 
   const handleAddSkill = async () => {
     if (!newSkill.name.trim()) return;
-    
+    setIsSaving(true);
     try {
       await axios.post('/users/skills', newSkill, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
       setNewSkill({ name: '', level: 'beginner', category: 'general' });
-      loadProfile(); // Reload to get updated data
+      await loadProfile(true); // silent refresh
     } catch (error) {
       console.error('Error adding skill:', error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleRemoveSkill = async (skillId: string) => {
+    // Optimistic update — remove immediately from UI
+    setProfile(prev => ({ ...prev, skills: prev.skills.filter((s: Skill) => s._id !== skillId) }));
     try {
-      await axios.delete(`/users/skills/${skillId}`, {
+      const res = await axios.delete(`/users/skills/${skillId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
-      loadProfile(); // Reload to get updated data
+      // Sync with the authoritative list the server just returned
+      if (res.data.skills) {
+        setProfile(prev => ({ ...prev, skills: res.data.skills }));
+      }
     } catch (error) {
       console.error('Error removing skill:', error);
+      await loadProfile(true); // revert on error
     }
   };
 
   const handleAddGoal = async () => {
     if (!newGoal.title.trim()) return;
-    
+    // Optimistic update — show new goal immediately with a temp id
+    const tempGoal = { ...newGoal, _id: `temp_${Date.now()}` };
+    setProfile(prev => ({ ...prev, careerGoals: [...prev.careerGoals, tempGoal] }));
+    setNewGoal({ title: '', description: '', priority: 'medium' });
+    setIsSaving(true);
     try {
-      await axios.post('/users/goals', newGoal, {
+      const res = await axios.post('/users/goals', newGoal, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
-      setNewGoal({ title: '', description: '', priority: 'medium' });
-      loadProfile(); // Reload to get updated data
+      // Replace temp entry with the real goal returned by the server
+      if (res.data.goal) {
+        setProfile(prev => ({
+          ...prev,
+          careerGoals: prev.careerGoals.map((g: CareerGoal) =>
+            g._id === tempGoal._id ? res.data.goal : g
+          )
+        }));
+      }
     } catch (error) {
       console.error('Error adding goal:', error);
+      // Revert optimistic update on failure
+      setProfile(prev => ({ ...prev, careerGoals: prev.careerGoals.filter((g: CareerGoal) => g._id !== tempGoal._id) }));
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleRemoveGoal = async (goalId: string) => {
+    // Optimistic update — remove immediately from UI
+    setProfile(prev => ({ ...prev, careerGoals: prev.careerGoals.filter((g: CareerGoal) => g._id !== goalId) }));
     try {
-      await axios.delete(`/users/goals/${goalId}`, {
+      const res = await axios.delete(`/users/goals/${goalId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
-      loadProfile(); // Reload to get updated data
+      // Sync with the authoritative list the server just returned
+      if (res.data.careerGoals) {
+        setProfile(prev => ({ ...prev, careerGoals: res.data.careerGoals }));
+      }
     } catch (error) {
       console.error('Error removing goal:', error);
+      await loadProfile(true); // revert on error
     }
   };
 
-  if (isLoading) {
+  if (isInitialLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center transition-colors duration-200">
         <div className="text-center">
@@ -166,9 +192,17 @@ const Profile: React.FC = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-200">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Profile Settings</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">Manage your personal information and career preferences</p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Profile Settings</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">Manage your personal information and career preferences</p>
+          </div>
+          {isSaving && (
+            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+              <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              Saving...
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
