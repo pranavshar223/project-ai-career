@@ -76,7 +76,7 @@ const chatMessageSchema = new mongoose.Schema({
   },
   source: {
     type: String,
-    enum: ['gemini-api', 'enhanced-mock', 'fallback'],
+    enum: ['gemini-api', 'enhanced-mock', 'fallback', 'mock'],
     default: 'gemini-api'
   }
 }, {
