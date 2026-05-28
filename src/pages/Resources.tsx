@@ -178,9 +178,10 @@ const Resources: React.FC = () => {
 
   const filteredResources = useMemo(() => {
     return allResources.filter(resource => {
-      const matchesSearch = resource.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                            resource.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            resource.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+      const searchLower = searchQuery.toLowerCase();
+      const matchesSearch = (resource.title?.toLowerCase() ?? '').includes(searchLower) || 
+                            (resource.description?.toLowerCase() ?? '').includes(searchLower) ||
+                            (resource.tags || []).some(tag => (tag?.toLowerCase() ?? '').includes(searchLower));
       
       const matchesCategory = activeCategory === 'All' || 
                               (activeCategory === 'AI Suggested' && resource.isAiSuggested) || 
@@ -282,6 +283,7 @@ const Resources: React.FC = () => {
                       </div>
                       <button 
                         onClick={() => toggleSave(resource.id)}
+                        aria-label={isSaved ? "Remove from saved resources" : "Save resource"}
                         className={`p-2 rounded-full transition-colors flex-shrink-0 ${isSaved ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
                       >
                         <Bookmark className={`w-5 h-5 ${isSaved ? 'fill-current' : ''}`} />

@@ -359,7 +359,13 @@ function sanitizeResources(resources) {
         return false;
       }
     })
-    .map(r => ({ ...r, type: validTypes.includes(r.type) ? r.type : (typeMap[r.type] || "article") }));
+    .map(r => {
+      const normalizedType = typeof r.type === 'string' ? r.type.trim().toLowerCase() : '';
+      return { 
+        ...r, 
+        type: validTypes.includes(normalizedType) ? normalizedType : (typeMap[normalizedType] || "article") 
+      };
+    });
 }
 
 module.exports = router;
