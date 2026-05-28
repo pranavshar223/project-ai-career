@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./public/arohan gb-remove.JPG" width="250" alt="Arohan Logo" />
+  <img src="./public/arohan gb-remove.JPG" width="120" alt="Arohan Logo" style="border-radius: 16px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" />
   <h1>🎯 AI Career Assistant</h1>
   <p><em>An intelligent, full-stack platform empowering students and professionals to navigate their careers — from identifying skill gaps to landing the perfect job.</em></p>
 </div>
@@ -52,7 +52,7 @@ npm install
 ```bash
 cd server
 npm install
-cp ../.env.example .env
+cp .env.example .env
 ```
 *Note: Be sure to populate your `.env` file with the correct credentials (see Environment Variables below).*
 
@@ -82,6 +82,66 @@ JWT_EXPIRES_IN=7d
 # External APIs
 GEMINI_API_KEY=your_google_gemini_api_key
 RAPIDAPI_KEY=your_rapidapi_key
+```
+
+## 🗄️ Database Schema
+
+The backend utilizes MongoDB and Mongoose to model complex relationships efficiently. Below is a high-level representation of the core data models and their interactions.
+
+```mermaid
+erDiagram
+    USER ||--o{ ROADMAP : generates
+    USER ||--o{ CHAT_SESSION : has
+    USER ||--o{ SAVED_JOB : tracks
+    ROADMAP ||--o{ ROADMAP_ITEM : contains
+    CHAT_SESSION ||--o{ CHAT_MESSAGE : includes
+
+    USER {
+        ObjectId _id
+        String name
+        String email
+        String password
+        String background
+        Array skills
+        Array careerGoals
+        Object preferences
+        Object streak
+    }
+
+    ROADMAP {
+        ObjectId _id
+        ObjectId userId
+        String title
+        String careerGoal
+        String targetRole
+        Array items
+        Object progress
+    }
+
+    ROADMAP_ITEM {
+        ObjectId _id
+        String title
+        String type
+        String phase
+        String status
+        Date dueDate
+        Array resources
+    }
+
+    CHAT_SESSION {
+        ObjectId _id
+        ObjectId userId
+        String title
+        Date lastInteraction
+    }
+
+    CHAT_MESSAGE {
+        ObjectId _id
+        ObjectId sessionId
+        String role
+        String content
+        Date timestamp
+    }
 ```
 
 ## 📡 API Reference

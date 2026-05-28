@@ -1,5 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const connectDB = require('./config/database');
 const errorHandler = require('./middleware/errorHandler');
 
@@ -34,6 +36,16 @@ app.use(cors(corsOptions));
 // --- END: CORS Configuration ---
 
 app.use(express.json());
+
+// --- START: Security Middleware ---
+app.use(helmet());
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again after 15 minutes'
+});
+app.use('/api', limiter);
+// --- END: Security Middleware ---
 
 // Basic route
 app.get('/', (req, res) => {
