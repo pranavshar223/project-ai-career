@@ -349,7 +349,17 @@ function sanitizeResources(resources) {
   if (!Array.isArray(resources)) return [];
   const validTypes = ["course", "article", "video", "book", "documentation"];
   const typeMap = { tutorial: "article", dataset: "documentation", platform: "course", guide: "article", tool: "documentation", project: "article", website: "article", repo: "documentation", repository: "documentation", blog: "article", podcast: "video", exercise: "course" };
-  return resources.filter(r => r.title && r.url).map(r => ({ ...r, type: validTypes.includes(r.type) ? r.type : (typeMap[r.type] || "article") }));
+  return resources
+    .filter(r => {
+      if (!r.title || !r.url) return false;
+      try {
+        const parsed = new URL(r.url);
+        return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+      } catch (e) {
+        return false;
+      }
+    })
+    .map(r => ({ ...r, type: validTypes.includes(r.type) ? r.type : (typeMap[r.type] || "article") }));
 }
 
 module.exports = router;

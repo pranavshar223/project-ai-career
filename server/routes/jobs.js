@@ -275,7 +275,7 @@ async function fetchJobsFromAPI(params) {
         num_pages: pagesNeeded,
         country: "in", // 👈 You can make this dynamic if needed
       },
-      timeout: 10000,
+      timeout: 30000,
     });
 
     // ✅ Map JSearch response to match your old Adzuna response shape

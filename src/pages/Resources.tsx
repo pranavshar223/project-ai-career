@@ -10,12 +10,30 @@ interface Resource {
   id: string;
   title: string;
   description: string;
-  category: string;
+  category: Category;
   url: string;
-  icon: React.FC<any>;
+  icon: React.ElementType<{ className?: string }>;
   tags: string[];
   isAiSuggested?: boolean;
   isNewAdd?: boolean;
+}
+
+// API Response Types
+interface ApiResource {
+  _id?: string;
+  title: string;
+  url: string;
+  type?: string;
+}
+
+interface ApiRoadmapItem {
+  title: string;
+  phase?: string;
+  resources?: ApiResource[];
+}
+
+interface ApiRoadmap {
+  items?: ApiRoadmapItem[];
 }
 
 const MOCK_RESOURCES: Resource[] = [
@@ -91,15 +109,17 @@ const Resources: React.FC = () => {
   useEffect(() => {
     const fetchRoadmaps = async () => {
       if (!token) {
+        setDbResources([]);
         setIsLoading(false);
         return;
       }
+      setIsLoading(true);
       try {
         const res = await axios.get('/roadmaps', {
           headers: { Authorization: `Bearer ${token}` }
         });
         
-        const roadmaps = res.data.roadmaps || [];
+        const roadmaps: ApiRoadmap[] = res.data.roadmaps || [];
         // Roadmaps are likely sorted newest first. Reverse to process oldest first.
         const sortedRoadmaps = [...roadmaps].reverse(); 
         
@@ -112,9 +132,9 @@ const Resources: React.FC = () => {
           const markAsNewAdd = sortedRoadmaps.length > 1 && isLatestRoadmap;
 
           if (roadmap.items) {
-            roadmap.items.forEach((item: any) => {
+            roadmap.items.forEach((item) => {
               if (item.resources) {
-                item.resources.forEach((r: any) => {
+                item.resources.forEach((r) => {
                   if (!seenUrls.has(r.url)) {
                     seenUrls.add(r.url);
                     
@@ -290,15 +310,29 @@ const Resources: React.FC = () => {
                       ))}
                     </div>
 
-                    <a 
-                      href={resource.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center w-full py-2.5 px-4 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm font-medium rounded-xl transition-colors border border-gray-200 dark:border-gray-700 group-hover:border-blue-500/30 group-hover:dark:border-blue-500/30"
-                    >
-                      View Resource
-                      <ExternalLink className="w-4 h-4 ml-2 opacity-70 group-hover:opacity-100 transition-opacity" />
-                    </a>
+                    {(() => {
+                      let isValid = false;
+                      try {
+                        const parsed = new URL(resource.url);
+                        isValid = parsed.protocol === 'http:' || parsed.protocol === 'https:';
+                      } catch {}
+                      
+                      return isValid ? (
+                        <a 
+                          href={resource.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center w-full py-2.5 px-4 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm font-medium rounded-xl transition-colors border border-gray-200 dark:border-gray-700 group-hover:border-blue-500/30 group-hover:dark:border-blue-500/30"
+                        >
+                          View Resource
+                          <ExternalLink className="w-4 h-4 ml-2 opacity-70 group-hover:opacity-100 transition-opacity" />
+                        </a>
+                      ) : (
+                        <span className="inline-flex items-center justify-center w-full py-2.5 px-4 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 text-sm font-medium rounded-xl border border-gray-200 dark:border-gray-700 cursor-not-allowed">
+                          Link Unavailable
+                        </span>
+                      );
+                    })()}
                   </div>
                 </div>
               );
