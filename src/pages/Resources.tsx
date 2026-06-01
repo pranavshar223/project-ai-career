@@ -318,7 +318,10 @@ const Resources: React.FC = () => {
                         const parsed = new URL(resource.url);
                         isValid = parsed.protocol === 'http:' || parsed.protocol === 'https:';
                       } catch (error) {
-                        // Ignore invalid URL format
+                        isValid = false;
+                        if (process.env.NODE_ENV === 'development') {
+                          console.error(`URL validation failed for ${resource.url}:`, error);
+                        }
                       }
                       
                       return isValid ? (
