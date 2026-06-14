@@ -1,6 +1,6 @@
 <div align="center">
   <img src="./public/arohan gb-remove.JPG" width="120" alt="Arohan Logo" style="border-radius: 16px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" />
-  <h1>🎯 AI Career Assistant</h1>
+  <h1>🎯 Arohan.ai (AI Career Assistant)</h1>
   <p><em>An intelligent, full-stack platform empowering students and professionals to navigate their careers — from identifying skill gaps to landing the perfect job.</em></p>
 </div>
 
