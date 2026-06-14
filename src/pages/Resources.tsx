@@ -317,7 +317,12 @@ const Resources: React.FC = () => {
                       try {
                         const parsed = new URL(resource.url);
                         isValid = parsed.protocol === 'http:' || parsed.protocol === 'https:';
-                      } catch {}
+                      } catch (error) {
+                        isValid = false;
+                        if (process.env.NODE_ENV === 'development') {
+                          console.error(`URL validation failed for ${resource.url}:`, error);
+                        }
+                      }
                       
                       return isValid ? (
                         <a 
