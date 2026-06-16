@@ -74,17 +74,24 @@ class GeminiService {
     const { userProfile = {}, targetRole, timeframe = '6-months' } = context;
 
     const userSkills = userProfile.skills?.map(s => `${s.name} (${s.level})`).join(', ') || 'None';
-    const background = userProfile.background || 'Not specified';
+    const background = userProfile.role || 'Not specified';
     const experience = userProfile.profile?.experience || 'intermediate';
     
-    // Add quick onboarding profile if available
-    const obp = userProfile.onboardingProfile || {};
-    const detailedBackground = obp.userType ? `${obp.userType} studying ${obp.institution || 'independently'}` : background;
-    const knownSkills = obp.knownSkills?.join(', ') || userSkills;
-    const learningStyle = obp.learningStyle || 'mixed';
-    const challenges = obp.challenges?.join(', ') || 'None specified';
-    const finalGoal = obp.careerGoalDesc || careerGoal;
-    const timeCommitment = obp.weeklyTime || '10 hours/week';
+    // Read from normalized profile
+    const prof = userProfile.profile || {};
+    const learningStyle = prof.learningStyle || 'mixed';
+    const timeCommitment = prof.weeklyTime ? `${prof.weeklyTime} hours/week` : '10 hours/week';
+    const confidenceLevel = prof.confidenceLevel || 'Not specified';
+    const challenges = prof.challenges?.join(', ') || 'None specified';
+    const education = prof.institution ? `${prof.institution} (Class of ${prof.graduationYear || 'Unknown'})` : 'Not specified';
+    
+    // Read preferences
+    const prefs = userProfile.preferences || {};
+    const companies = prefs.dreamCompanies || prefs.preferredCompanyTypes?.join(', ') || 'Not specified';
+    
+    // Read goals
+    const goalsList = userProfile.careerGoals?.map(g => `${g.title}: ${g.description}`).join(' | ') || careerGoal;
+    const finalGoal = goalsList || careerGoal;
 
     // Calculate week count from timeframe
     const weeksMap = { '3-months': 12, '6-months': 24, '1-year': 48, '2-years': 96 };
@@ -93,13 +100,16 @@ class GeminiService {
     const prompt = `You are an expert career coach. Generate a detailed, PERSONALIZED career roadmap.
 
 USER PROFILE:
-- Career Goal: ${finalGoal}
-- Target Role: ${targetRole || finalGoal}
-- Background: ${detailedBackground}
-- Experience Level: ${obp.skillLevel || experience}
-- Current/Known Skills: ${knownSkills}
+- Career Goal(s): ${finalGoal}
+- Target Role: ${targetRole || 'Not specified'}
+- Background: ${background}
+- Education: ${education}
+- Experience Level: ${experience}
+- Current/Known Skills: ${userSkills}
 - Preferred Learning Style: ${learningStyle}
+- Career Confidence: ${confidenceLevel}
 - Current Challenges: ${challenges}
+- Target Companies: ${companies}
 - Time Commitment: ${timeCommitment}
 - Timeframe: ${timeframe} (${totalWeeks} weeks total)
 
@@ -322,8 +332,13 @@ Return ONLY this JSON:
     let prompt = `You are an Advanced AI Career Advisor.
 
 User Profile:
-- Background: ${userProfile.background || 'Not specified'}
+- Background: ${userProfile.role || 'Not specified'}
+- Education: ${userProfile.profile?.institution ? `${userProfile.profile.institution} (Class of ${userProfile.profile.graduationYear || 'Unknown'})` : 'Not specified'}
 - Experience: ${userProfile.profile?.experience || 'Not specified'}
+- Learning Style: ${userProfile.profile?.learningStyle || 'mixed'}
+- Challenges: ${userProfile.profile?.challenges?.join(', ') || 'None specified'}
+- Target Companies: ${userProfile.preferences?.dreamCompanies || userProfile.preferences?.preferredCompanyTypes?.join(', ') || 'Not specified'}
+- Weekly Time: ${userProfile.profile?.weeklyTime || 0} hours
 - Skills: ${this.formatSkills(userProfile.skills)}
 - Goals: ${this.formatGoals(userProfile.careerGoals)}
 

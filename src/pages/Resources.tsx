@@ -102,7 +102,7 @@ const Resources: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<Category>('All');
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
-  
+
   const [dbResources, setDbResources] = useState<Resource[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -118,14 +118,14 @@ const Resources: React.FC = () => {
         const res = await axios.get('/roadmaps', {
           headers: { Authorization: `Bearer ${token}` }
         });
-        
+
         const roadmaps: ApiRoadmap[] = res.data.roadmaps || [];
         // Roadmaps are likely sorted newest first. Reverse to process oldest first.
-        const sortedRoadmaps = [...roadmaps].reverse(); 
-        
+        const sortedRoadmaps = [...roadmaps].reverse();
+
         const seenUrls = new Set<string>();
         const fetchedResources: Resource[] = [];
-        
+
         sortedRoadmaps.forEach((roadmap, index) => {
           const isLatestRoadmap = index === sortedRoadmaps.length - 1;
           // Mark as "New Add" if there is more than 1 roadmap and this is from the latest one
@@ -137,7 +137,7 @@ const Resources: React.FC = () => {
                 item.resources.forEach((r) => {
                   if (!seenUrls.has(r.url)) {
                     seenUrls.add(r.url);
-                    
+
                     let Icon = ExternalLink;
                     if (r.type === 'video' || r.type === 'course') Icon = Video;
                     if (r.type === 'documentation' || r.type === 'book') Icon = BookOpen;
@@ -159,7 +159,7 @@ const Resources: React.FC = () => {
             });
           }
         });
-        
+
         // Reverse again so the newest resources are at the top
         setDbResources(fetchedResources.reverse());
       } catch (error) {
@@ -168,7 +168,7 @@ const Resources: React.FC = () => {
         setIsLoading(false);
       }
     };
-    
+
     fetchRoadmaps();
   }, [token]);
 
@@ -179,14 +179,14 @@ const Resources: React.FC = () => {
   const filteredResources = useMemo(() => {
     return allResources.filter(resource => {
       const searchLower = searchQuery.toLowerCase();
-      const matchesSearch = (resource.title?.toLowerCase() ?? '').includes(searchLower) || 
-                            (resource.description?.toLowerCase() ?? '').includes(searchLower) ||
-                            (resource.tags || []).some(tag => (tag?.toLowerCase() ?? '').includes(searchLower));
-      
-      const matchesCategory = activeCategory === 'All' || 
-                              (activeCategory === 'AI Suggested' && resource.isAiSuggested) || 
-                              resource.category === activeCategory;
-      
+      const matchesSearch = (resource.title?.toLowerCase() ?? '').includes(searchLower) ||
+        (resource.description?.toLowerCase() ?? '').includes(searchLower) ||
+        (resource.tags || []).some(tag => (tag?.toLowerCase() ?? '').includes(searchLower));
+
+      const matchesCategory = activeCategory === 'All' ||
+        (activeCategory === 'AI Suggested' && resource.isAiSuggested) ||
+        resource.category === activeCategory;
+
       return matchesSearch && matchesCategory;
     });
   }, [allResources, searchQuery, activeCategory]);
@@ -203,7 +203,7 @@ const Resources: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-200 p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-8">
-        
+
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
@@ -235,11 +235,10 @@ const Resources: React.FC = () => {
             <button
               key={category}
               onClick={() => setActiveCategory(category)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                activeCategory === category
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
-              }`}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${activeCategory === category
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                }`}
             >
               {category}
             </button>
@@ -258,7 +257,7 @@ const Resources: React.FC = () => {
               const isSaved = savedIds.has(resource.id);
 
               return (
-                <div 
+                <div
                   key={resource.id}
                   className="group relative flex flex-col bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
                 >
@@ -281,7 +280,7 @@ const Resources: React.FC = () => {
                           </div>
                         )}
                       </div>
-                      <button 
+                      <button
                         onClick={() => toggleSave(resource.id)}
                         aria-label={isSaved ? "Remove from saved resources" : "Save resource"}
                         className={`p-2 rounded-full transition-colors flex-shrink-0 ${isSaved ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
@@ -289,17 +288,17 @@ const Resources: React.FC = () => {
                         <Bookmark className={`w-5 h-5 ${isSaved ? 'fill-current' : ''}`} />
                       </button>
                     </div>
-                    
+
                     <div className="mb-2">
                       <span className="text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-500">
                         {resource.category}
                       </span>
                     </div>
-                    
+
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 leading-tight">
                       {resource.title}
                     </h3>
-                    
+
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-6 flex-1">
                       {resource.description}
                     </p>
@@ -317,15 +316,10 @@ const Resources: React.FC = () => {
                       try {
                         const parsed = new URL(resource.url);
                         isValid = parsed.protocol === 'http:' || parsed.protocol === 'https:';
-                      } catch (error) {
-                        isValid = false;
-                        if (process.env.NODE_ENV === 'development') {
-                          console.error(`URL validation failed for ${resource.url}:`, error);
-                        }
-                      }
-                      
+                      } catch { }
+
                       return isValid ? (
-                        <a 
+                        <a
                           href={resource.url}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -354,7 +348,7 @@ const Resources: React.FC = () => {
             <p className="text-gray-600 dark:text-gray-400 max-w-md">
               We couldn't find any resources matching your search or filter. Try using different keywords.
             </p>
-            <button 
+            <button
               onClick={() => {
                 setSearchQuery('');
                 setActiveCategory('All');

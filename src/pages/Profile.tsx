@@ -9,9 +9,12 @@ const Profile: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isEditingOnboarding, setIsEditingOnboarding] = useState(false);
+  const [isEditingEdu, setIsEditingEdu] = useState(false);
+  const [isEditingCompany, setIsEditingCompany] = useState(false);
   const [newSkill, setNewSkill] = useState({ name: '', level: 'beginner', category: 'general' });
   const [newGoal, setNewGoal] = useState({ title: '', description: '', priority: 'medium' });
-  
+
   const [profile, setProfile] = useState({
     name: '',
     email: '',
@@ -21,6 +24,13 @@ const Profile: React.FC = () => {
       location: '',
       website: '',
       experience: '0-1 years',
+      interests: [],
+      learningStyle: '',
+      weeklyTime: 0,
+      confidenceLevel: '',
+      institution: '',
+      graduationYear: 0,
+      challenges: []
     },
     skills: [],
     careerGoals: [],
@@ -28,7 +38,9 @@ const Profile: React.FC = () => {
       jobLocation: '',
       jobType: 'full-time',
       remoteWork: true,
-      salaryRange: { min: 0, max: 0 }
+      salaryRange: { min: 0, max: 0 },
+      preferredCompanyTypes: [],
+      dreamCompanies: ''
     },
     streak: {
       current: 0,
@@ -40,13 +52,13 @@ const Profile: React.FC = () => {
 
   const loadProfile = useCallback(async (silent = false) => {
     if (!token) return;
-    
+
     if (!silent) setIsInitialLoading(true);
     try {
       const response = await axios.get('/users/profile', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       if (response.data.profile) {
         setProfile({
           ...response.data.profile,
@@ -55,6 +67,13 @@ const Profile: React.FC = () => {
             location: '',
             website: '',
             experience: '0-1 years',
+            interests: [],
+            learningStyle: '',
+            weeklyTime: 0,
+            confidenceLevel: '',
+            institution: '',
+            graduationYear: 0,
+            challenges: []
           },
           skills: response.data.profile.skills || [],
           careerGoals: response.data.profile.careerGoals || [],
@@ -62,7 +81,9 @@ const Profile: React.FC = () => {
             jobLocation: '',
             jobType: 'full-time',
             remoteWork: true,
-            salaryRange: { min: 0, max: 0 }
+            salaryRange: { min: 0, max: 0 },
+            preferredCompanyTypes: [],
+            dreamCompanies: ''
           },
           streak: response.data.profile.streak || {
             current: 0,
@@ -90,10 +111,56 @@ const Profile: React.FC = () => {
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       setIsEditing(false);
     } catch (error) {
       console.error('Error saving profile:', error);
+    }
+  };
+
+  const handleSaveOnboarding = async () => {
+    setIsSaving(true);
+    try {
+      await axios.put('/users/profile', {
+        profile: profile.profile
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setIsEditingOnboarding(false);
+    } catch (error) {
+      console.error('Error saving career preferences:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveEdu = async () => {
+    setIsSaving(true);
+    try {
+      await axios.put('/users/profile', {
+        profile: profile.profile
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setIsEditingEdu(false);
+    } catch (error) {
+      console.error('Error saving education:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveCompany = async () => {
+    setIsSaving(true);
+    try {
+      await axios.put('/users/preferences', profile.preferences, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setIsEditingCompany(false);
+    } catch (error) {
+      console.error('Error saving company preferences:', error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -215,11 +282,10 @@ const Profile: React.FC = () => {
               </div>
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{profile.name}</h2>
               <p className="text-gray-600 dark:text-gray-400 mb-4">{profile.email}</p>
-              <span className={`inline-block px-3 py-1 text-sm rounded-full ${
-                profile.background === 'student' 
-                  ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' 
+              <span className={`inline-block px-3 py-1 text-sm rounded-full ${profile.background === 'student'
+                  ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400'
                   : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400'
-              }`}>
+                }`}>
                 {profile.background === 'student' ? 'Student' : 'Professional'}
               </span>
             </div>
@@ -264,7 +330,7 @@ const Profile: React.FC = () => {
                     <input
                       type="text"
                       value={profile.name}
-                      onChange={(e) => setProfile({...profile, name: e.target.value})}
+                      onChange={(e) => setProfile({ ...profile, name: e.target.value })}
                       className={inputClass}
                     />
                   ) : (
@@ -284,7 +350,7 @@ const Profile: React.FC = () => {
                       type="text"
                       value={profile.profile.location}
                       onChange={(e) => setProfile({
-                        ...profile, 
+                        ...profile,
                         profile: { ...profile.profile, location: e.target.value }
                       })}
                       className={inputClass}
@@ -300,7 +366,7 @@ const Profile: React.FC = () => {
                     <select
                       value={profile.profile.experience}
                       onChange={(e) => setProfile({
-                        ...profile, 
+                        ...profile,
                         profile: { ...profile.profile, experience: e.target.value }
                       })}
                       className={inputClass}
@@ -322,7 +388,7 @@ const Profile: React.FC = () => {
                   <textarea
                     value={profile.profile.bio}
                     onChange={(e) => setProfile({
-                      ...profile, 
+                      ...profile,
                       profile: { ...profile.profile, bio: e.target.value }
                     })}
                     rows={3}
@@ -345,13 +411,156 @@ const Profile: React.FC = () => {
               )}
             </div>
 
+            {/* Education & Challenges */}
+            <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 transition-colors duration-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+                  <Book className="w-5 h-5 mr-2 text-blue-500" />
+                  Education & Challenges
+                </h3>
+                <button
+                  onClick={() => setIsEditingEdu(!isEditingEdu)}
+                  className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  {isEditingEdu ? 'Cancel' : 'Edit'}
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Institution</label>
+                  {isEditingEdu ? (
+                    <input
+                      type="text"
+                      value={profile.profile.institution}
+                      onChange={(e) => setProfile({ ...profile, profile: { ...profile.profile, institution: e.target.value } })}
+                      className={inputClass}
+                      placeholder="e.g., Stanford University"
+                    />
+                  ) : (
+                    <p className="text-gray-900 dark:text-gray-100">{profile.profile.institution || 'Not specified'}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Graduation Year</label>
+                  {isEditingEdu ? (
+                    <input
+                      type="number"
+                      value={profile.profile.graduationYear || ''}
+                      onChange={(e) => setProfile({ ...profile, profile: { ...profile.profile, graduationYear: parseInt(e.target.value) || 0 } })}
+                      className={inputClass}
+                      placeholder="e.g., 2025"
+                    />
+                  ) : (
+                    <p className="text-gray-900 dark:text-gray-100">{profile.profile.graduationYear || 'Not specified'}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Current Challenges</label>
+                {isEditingEdu ? (
+                  <input
+                    type="text"
+                    value={profile.profile.challenges?.join(', ') || ''}
+                    onChange={(e) => setProfile({ ...profile, profile: { ...profile.profile, challenges: e.target.value.split(',').map(s => s.trim()).filter(Boolean) } })}
+                    className={inputClass}
+                    placeholder="e.g., Finding Internships, DSA Problems"
+                  />
+                ) : (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {profile.profile.challenges && profile.profile.challenges.length > 0 ? (
+                      profile.profile.challenges.map((ch: string, index: number) => (
+                        <span key={index} className="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded-full text-sm font-medium">{ch}</span>
+                      ))
+                    ) : (
+                      <p className="text-gray-900 dark:text-gray-100">None specified</p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {isEditingEdu && (
+                <div className="mt-6 flex justify-end">
+                  <button onClick={handleSaveEdu} disabled={isSaving} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50">
+                    {isSaving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Company Preferences */}
+            <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 transition-colors duration-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+                  <Target className="w-5 h-5 mr-2 text-blue-500" />
+                  Company Preferences
+                </h3>
+                <button
+                  onClick={() => setIsEditingCompany(!isEditingCompany)}
+                  className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  {isEditingCompany ? 'Cancel' : 'Edit'}
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Dream Companies</label>
+                  {isEditingCompany ? (
+                    <input
+                      type="text"
+                      value={profile.preferences.dreamCompanies}
+                      onChange={(e) => setProfile({ ...profile, preferences: { ...profile.preferences, dreamCompanies: e.target.value } })}
+                      className={inputClass}
+                      placeholder="e.g., Google, Microsoft, OpenAI"
+                    />
+                  ) : (
+                    <p className="text-gray-900 dark:text-gray-100">{profile.preferences.dreamCompanies || 'Not specified'}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Preferred Company Types</label>
+                  {isEditingCompany ? (
+                    <input
+                      type="text"
+                      value={profile.preferences.preferredCompanyTypes?.join(', ') || ''}
+                      onChange={(e) => setProfile({ ...profile, preferences: { ...profile.preferences, preferredCompanyTypes: e.target.value.split(',').map(s => s.trim()).filter(Boolean) } })}
+                      className={inputClass}
+                      placeholder="e.g., Startups, Product-Based Companies"
+                    />
+                  ) : (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {profile.preferences.preferredCompanyTypes && profile.preferences.preferredCompanyTypes.length > 0 ? (
+                        profile.preferences.preferredCompanyTypes.map((type: string, index: number) => (
+                          <span key={index} className="px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 rounded-full text-sm font-medium">{type}</span>
+                        ))
+                      ) : (
+                        <p className="text-gray-900 dark:text-gray-100">Not specified</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {isEditingCompany && (
+                <div className="mt-6 flex justify-end">
+                  <button onClick={handleSaveCompany} disabled={isSaving} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50">
+                    {isSaving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
+              )}
+            </div>
+
             {/* Skills */}
             <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 transition-colors duration-200">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
                 <Book className="w-5 h-5 mr-2" />
                 Current Skills
               </h3>
-              
+
               {/* Add new skill */}
               <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
@@ -359,12 +568,12 @@ const Profile: React.FC = () => {
                     type="text"
                     placeholder="Skill name"
                     value={newSkill.name}
-                    onChange={(e) => setNewSkill({...newSkill, name: e.target.value})}
+                    onChange={(e) => setNewSkill({ ...newSkill, name: e.target.value })}
                     className={inputClass}
                   />
                   <select
                     value={newSkill.level}
-                    onChange={(e) => setNewSkill({...newSkill, level: e.target.value})}
+                    onChange={(e) => setNewSkill({ ...newSkill, level: e.target.value })}
                     className={inputClass}
                   >
                     <option value="beginner">Beginner</option>
@@ -375,7 +584,7 @@ const Profile: React.FC = () => {
                     type="text"
                     placeholder="Category"
                     value={newSkill.category}
-                    onChange={(e) => setNewSkill({...newSkill, category: e.target.value})}
+                    onChange={(e) => setNewSkill({ ...newSkill, category: e.target.value })}
                     className={inputClass}
                   />
                   <button
@@ -414,7 +623,7 @@ const Profile: React.FC = () => {
                 <Target className="w-5 h-5 mr-2" />
                 Career Goals
               </h3>
-              
+
               {/* Add new goal */}
               <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
@@ -422,19 +631,19 @@ const Profile: React.FC = () => {
                     type="text"
                     placeholder="Goal title"
                     value={newGoal.title}
-                    onChange={(e) => setNewGoal({...newGoal, title: e.target.value})}
+                    onChange={(e) => setNewGoal({ ...newGoal, title: e.target.value })}
                     className={inputClass}
                   />
                   <input
                     type="text"
                     placeholder="Description"
                     value={newGoal.description}
-                    onChange={(e) => setNewGoal({...newGoal, description: e.target.value})}
+                    onChange={(e) => setNewGoal({ ...newGoal, description: e.target.value })}
                     className={inputClass}
                   />
                   <select
                     value={newGoal.priority}
-                    onChange={(e) => setNewGoal({...newGoal, priority: e.target.value})}
+                    onChange={(e) => setNewGoal({ ...newGoal, priority: e.target.value })}
                     className={inputClass}
                   >
                     <option value="low">Low</option>

@@ -2,7 +2,25 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  background: 'student' | 'professional';
+  background?: 'student' | 'professional';
+  journeyIntent?: 'focused' | 'exploring' | 'career_change';
+  onboardingProfile?: {
+    userType?: string;
+    interests?: string[];
+    primaryGoal?: string;
+    skillLevel?: string;
+    knownSkills?: string[];
+    weeklyTime?: string;
+    challenges?: string[];
+    careerConfidence?: string;
+    institution?: string;
+    graduationYear?: number;
+    preferredCompanyTypes?: string[];
+    dreamCompanies?: string;
+    learningStyle?: string;
+    careerGoalDesc?: string;
+  };
+  onboardingCompleted?: boolean;
   createdAt: Date;
 }
 
