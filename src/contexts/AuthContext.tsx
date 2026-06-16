@@ -9,7 +9,7 @@ interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
-  completeOnboarding: () => void;
+  completeOnboarding: (updatedUser: User) => void;
   logout: () => void;
   isLoading: boolean;
   isAuthLoading: boolean;
@@ -58,12 +58,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.removeItem('user');
   }, []);
 
-  const completeOnboarding = useCallback(() => {
-    setUser(prev => prev ? { ...prev, onboardingCompleted: true } : null);
-    if (user) {
-      localStorage.setItem('user', JSON.stringify({ ...user, onboardingCompleted: true }));
-    }
-  }, [user]);
+  const completeOnboarding = useCallback((updatedUser: User) => {
+    setUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+  }, []);
 
   const verifyToken = useCallback(async (savedToken: string) => {
     try {
