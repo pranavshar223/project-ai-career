@@ -76,6 +76,15 @@ class GeminiService {
     const userSkills = userProfile.skills?.map(s => `${s.name} (${s.level})`).join(', ') || 'None';
     const background = userProfile.background || 'Not specified';
     const experience = userProfile.profile?.experience || 'intermediate';
+    
+    // Add quick onboarding profile if available
+    const obp = userProfile.onboardingProfile || {};
+    const detailedBackground = obp.userType ? `${obp.userType} studying ${obp.institution || 'independently'}` : background;
+    const knownSkills = obp.knownSkills?.join(', ') || userSkills;
+    const learningStyle = obp.learningStyle || 'mixed';
+    const challenges = obp.challenges?.join(', ') || 'None specified';
+    const finalGoal = obp.careerGoalDesc || careerGoal;
+    const timeCommitment = obp.weeklyTime || '10 hours/week';
 
     // Calculate week count from timeframe
     const weeksMap = { '3-months': 12, '6-months': 24, '1-year': 48, '2-years': 96 };
@@ -84,11 +93,14 @@ class GeminiService {
     const prompt = `You are an expert career coach. Generate a detailed, PERSONALIZED career roadmap.
 
 USER PROFILE:
-- Career Goal: ${careerGoal}
-- Target Role: ${targetRole || careerGoal}
-- Background: ${background}
-- Experience Level: ${experience}
-- Current Skills: ${userSkills}
+- Career Goal: ${finalGoal}
+- Target Role: ${targetRole || finalGoal}
+- Background: ${detailedBackground}
+- Experience Level: ${obp.skillLevel || experience}
+- Current/Known Skills: ${knownSkills}
+- Preferred Learning Style: ${learningStyle}
+- Current Challenges: ${challenges}
+- Time Commitment: ${timeCommitment}
 - Timeframe: ${timeframe} (${totalWeeks} weeks total)
 
 REQUIREMENTS:

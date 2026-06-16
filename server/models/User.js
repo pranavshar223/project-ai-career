@@ -23,8 +23,27 @@ const userSchema = new mongoose.Schema({
   },
   background: {
     type: String,
-    enum: ['student', 'professional'],
-    required: [true, 'Background is required']
+    enum: ['student', 'professional']
+  },
+  journeyIntent: {
+    type: String,
+    enum: ['focused', 'exploring', 'career_change']
+  },
+  onboardingProfile: {
+    userType: String,
+    interests: [String],
+    primaryGoal: String,
+    skillLevel: String,
+    knownSkills: [String],
+    weeklyTime: String,
+    challenges: [String],
+    careerConfidence: String,
+    institution: String,
+    graduationYear: Number,
+    preferredCompanyTypes: [String],
+    dreamCompanies: String,
+    learningStyle: String,
+    careerGoalDesc: String
   },
   profile: {
     bio: String,
