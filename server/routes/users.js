@@ -502,10 +502,52 @@ router.post('/onboarding', auth, async (req, res) => {
       learningStyle, careerGoalDesc, onboardingCompleted
     } = req.body;
 
+    const roleMap = {
+      'school student': 'student',
+      'college student': 'student',
+      'recent graduate': 'student',
+      'working professional': 'professional',
+      'career switcher': 'career_switcher',
+      'freelancer': 'professional',
+      'entrepreneur': 'professional'
+    };
+
+    const confidenceMap = {
+      'completely lost': 'low',
+      'somewhat confused': 'low',
+      'have basic direction': 'medium',
+      'mostly clear': 'high',
+      'very clear': 'high'
+    };
+
+    const learningStyleMap = {
+      'video tutorials': 'visual',
+      'reading articles': 'reading',
+      'documentation': 'reading',
+      'hands-on projects': 'project_based',
+      'mentor guidance': 'interactive',
+      'community learning': 'interactive'
+    };
+
     // Update Profile Preferences
     if (interests !== undefined) user.profile.interests = interests;
-    if (learningStyle !== undefined) user.profile.learningStyle = learningStyle;
-    if (careerConfidence !== undefined) user.profile.confidenceLevel = careerConfidence;
+    
+    if (learningStyle !== undefined) {
+      const mappedStyle = learningStyleMap[learningStyle.toLowerCase()];
+      if (!mappedStyle) {
+        return res.status(400).json({ message: 'Invalid learningStyle selected' });
+      }
+      user.profile.learningStyle = mappedStyle;
+    }
+    
+    if (careerConfidence !== undefined) {
+      const mappedConfidence = confidenceMap[careerConfidence.toLowerCase()];
+      if (!mappedConfidence) {
+        return res.status(400).json({ message: 'Invalid careerConfidence selected' });
+      }
+      user.profile.confidenceLevel = mappedConfidence;
+    }
+    
     if (weeklyTime !== undefined) {
       // rough extraction if it comes as string like "5-10 hours"
       if (typeof weeklyTime === 'string') {
@@ -523,7 +565,13 @@ router.post('/onboarding', auth, async (req, res) => {
     if (dreamCompanies !== undefined) user.preferences.dreamCompanies = dreamCompanies;
 
     // Role
-    if (userType !== undefined) user.role = userType.toLowerCase();
+    if (userType !== undefined) {
+      const mappedRole = roleMap[userType.toLowerCase()];
+      if (!mappedRole) {
+        return res.status(400).json({ message: 'Invalid userType selected' });
+      }
+      user.role = mappedRole;
+    }
 
     // Skills
     if (knownSkills && Array.isArray(knownSkills)) {
