@@ -6,6 +6,9 @@ import { useAuth } from '../contexts/AuthContext';
 
 type QuestionType = 'mcq' | 'msq' | 'input' | 'textarea' | 'info' | 'success' | 'welcome';
 
+type OnboardingAnswer = string | string[] | number | boolean;
+type OnboardingAnswers = Record<string, OnboardingAnswer>;
+
 interface Question {
   id: number;
   type: QuestionType;
@@ -155,7 +158,7 @@ const questions: Question[] = [
 
 const Onboarding: React.FC = () => {
   const [step, setStep] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, unknown>>({});
+  const [answers, setAnswers] = useState<OnboardingAnswers>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   
@@ -177,7 +180,7 @@ const Onboarding: React.FC = () => {
   const currentStep = questions.slice(0, step + 1).filter(q => q.field).length;
   const progressPercent = Math.max(0, Math.min(100, (currentStep / totalSteps) * 100));
 
-  const saveProgress = async (newAnswers: Record<string, unknown>, isFinal = false) => {
+  const saveProgress = async (newAnswers: OnboardingAnswers, isFinal = false) => {
     const res = await axios.post('/users/onboarding', {
       ...newAnswers,
       ...(isFinal ? { onboardingCompleted: true } : {})
@@ -229,8 +232,12 @@ const Onboarding: React.FC = () => {
         throw new Error('No user data returned');
       }
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      setError(error.response?.data?.message || 'Something went wrong. Please try again.');
+      if (axios.isAxiosError<{ message?: string }>(err)) {
+        const message = err.response?.data?.message;
+        setError(message || 'Something went wrong. Please try again.');
+      } else {
+        setError('Something went wrong. Please try again.');
+      }
       setIsSubmitting(false);
     }
   };
