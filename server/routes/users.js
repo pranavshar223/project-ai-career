@@ -549,9 +549,20 @@ router.post('/onboarding', auth, async (req, res) => {
     }
     
     if (weeklyTime !== undefined) {
-      // rough extraction if it comes as string like "5-10 hours"
       if (typeof weeklyTime === 'string') {
-        user.profile.weeklyTime = parseInt(weeklyTime.replace(/\D/g, '')) || 0;
+        const lowerTime = weeklyTime.toLowerCase();
+        if (lowerTime.includes('less than')) {
+          user.profile.weeklyTime = 4;
+        } else if (lowerTime.includes('more than')) {
+          user.profile.weeklyTime = 40;
+        } else {
+          const match = lowerTime.match(/(\d+)\s*-\s*(\d+)/);
+          if (match) {
+            user.profile.weeklyTime = Math.round((parseInt(match[1]) + parseInt(match[2])) / 2);
+          } else {
+            user.profile.weeklyTime = parseInt(lowerTime.replace(/\D/g, '')) || 0;
+          }
+        }
       } else {
         user.profile.weeklyTime = weeklyTime;
       }
