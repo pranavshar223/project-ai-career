@@ -282,11 +282,14 @@ const Profile: React.FC = () => {
               </div>
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{profile.name}</h2>
               <p className="text-gray-600 dark:text-gray-400 mb-4">{profile.email}</p>
-              <span className={`inline-block px-3 py-1 text-sm rounded-full ${profile.background === 'student'
+              <span className={`inline-block px-3 py-1 text-sm rounded-full ${
+                profile.role === 'student'
                   ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400'
+                  : profile.role === 'career_switcher'
+                  ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-400'
                   : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400'
                 }`}>
-                {profile.background === 'student' ? 'Student' : 'Professional'}
+                {profile.role === 'student' ? 'Student' : profile.role === 'career_switcher' ? 'Career Switcher' : 'Professional'}
               </span>
             </div>
 
