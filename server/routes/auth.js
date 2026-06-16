@@ -19,8 +19,7 @@ const generateToken = (userId) => {
 router.post('/register', [
   body('name').trim().isLength({ min: 2, max: 50 }).withMessage('Name must be between 2 and 50 characters'),
   body('email').isEmail().normalizeEmail().withMessage('Please provide a valid email'),
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
-  body('background').isIn(['student', 'professional']).withMessage('Background must be either student or professional')
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -28,14 +27,14 @@ router.post('/register', [
       return res.status(400).json({ message: 'Validation failed', errors: errors.array() });
     }
 
-    const { name, email, password, background } = req.body;
+    const { name, email, password } = req.body;
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists with this email' });
     }
 
-    const user = new User({ name, email, password, background });
+    const user = new User({ name, email, password });
     await user.save();
 
     const token = generateToken(user._id);

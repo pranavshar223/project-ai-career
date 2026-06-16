@@ -18,6 +18,8 @@ router.get('/profile', auth, async (req, res) => {
         name: user.name,
         email: user.email,
         background: user.background,
+        journeyIntent: user.journeyIntent,
+        onboardingProfile: user.onboardingProfile,
         profile: user.profile,
         skills: user.skills,
         careerGoals: user.careerGoals,
@@ -473,6 +475,68 @@ router.get('/stats', auth, async (req, res) => {
     console.error('Get stats error:', error);
     res.status(500).json({
       message: 'Error fetching user statistics'
+    });
+  }
+});
+
+// @route   POST /api/users/onboarding
+// @desc    Complete user onboarding or save progress
+// @access  Private
+router.post('/onboarding', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (!user.onboardingProfile) {
+      user.onboardingProfile = {};
+    }
+
+    const {
+      userType, interests, primaryGoal, skillLevel, knownSkills,
+      weeklyTime, challenges, careerConfidence, institution,
+      graduationYear, preferredCompanyTypes, dreamCompanies,
+      learningStyle, careerGoalDesc, onboardingCompleted
+    } = req.body;
+
+    // Update fields if provided
+    if (userType !== undefined) user.onboardingProfile.userType = userType;
+    if (interests !== undefined) user.onboardingProfile.interests = interests;
+    if (primaryGoal !== undefined) user.onboardingProfile.primaryGoal = primaryGoal;
+    if (skillLevel !== undefined) user.onboardingProfile.skillLevel = skillLevel;
+    if (knownSkills !== undefined) user.onboardingProfile.knownSkills = knownSkills;
+    if (weeklyTime !== undefined) user.onboardingProfile.weeklyTime = weeklyTime;
+    if (challenges !== undefined) user.onboardingProfile.challenges = challenges;
+    if (careerConfidence !== undefined) user.onboardingProfile.careerConfidence = careerConfidence;
+    if (institution !== undefined) user.onboardingProfile.institution = institution;
+    if (graduationYear !== undefined) user.onboardingProfile.graduationYear = graduationYear;
+    if (preferredCompanyTypes !== undefined) user.onboardingProfile.preferredCompanyTypes = preferredCompanyTypes;
+    if (dreamCompanies !== undefined) user.onboardingProfile.dreamCompanies = dreamCompanies;
+    if (learningStyle !== undefined) user.onboardingProfile.learningStyle = learningStyle;
+    if (careerGoalDesc !== undefined) user.onboardingProfile.careerGoalDesc = careerGoalDesc;
+
+    if (onboardingCompleted !== undefined) {
+       user.onboardingCompleted = onboardingCompleted;
+    }
+
+    await user.save();
+
+    res.json({
+      message: 'Onboarding progress saved successfully',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        onboardingProfile: user.onboardingProfile,
+        onboardingCompleted: user.onboardingCompleted
+      }
+    });
+  } catch (error) {
+    console.error('Onboarding error:', error);
+    res.status(500).json({
+      message: 'Error saving onboarding details'
     });
   }
 });
