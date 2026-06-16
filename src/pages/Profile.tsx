@@ -9,7 +9,6 @@ const Profile: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [isEditingOnboarding, setIsEditingOnboarding] = useState(false);
   const [isEditingEdu, setIsEditingEdu] = useState(false);
   const [isEditingCompany, setIsEditingCompany] = useState(false);
   const [newSkill, setNewSkill] = useState({ name: '', level: 'beginner', category: 'general' });
@@ -19,33 +18,34 @@ const Profile: React.FC = () => {
     name: '',
     email: '',
     background: 'professional',
+    role: '',
     profile: {
       bio: '',
       location: '',
       website: '',
       experience: '0-1 years',
-      interests: [],
+      interests: [] as string[],
       learningStyle: '',
       weeklyTime: 0,
       confidenceLevel: '',
       institution: '',
       graduationYear: 0,
-      challenges: []
+      challenges: [] as string[]
     },
-    skills: [],
-    careerGoals: [],
+    skills: [] as Skill[],
+    careerGoals: [] as CareerGoal[],
     preferences: {
       jobLocation: '',
       jobType: 'full-time',
       remoteWork: true,
       salaryRange: { min: 0, max: 0 },
-      preferredCompanyTypes: [],
+      preferredCompanyTypes: [] as string[],
       dreamCompanies: ''
     },
     streak: {
       current: 0,
       longest: 0,
-      completedDays: []
+      completedDays: [] as string[]
     },
     createdAt: new Date(),
   });
@@ -118,21 +118,7 @@ const Profile: React.FC = () => {
     }
   };
 
-  const handleSaveOnboarding = async () => {
-    setIsSaving(true);
-    try {
-      await axios.put('/users/profile', {
-        profile: profile.profile
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setIsEditingOnboarding(false);
-    } catch (error) {
-      console.error('Error saving career preferences:', error);
-    } finally {
-      setIsSaving(false);
-    }
-  };
+
 
   const handleSaveEdu = async () => {
     setIsSaving(true);
@@ -200,7 +186,7 @@ const Profile: React.FC = () => {
   const handleAddGoal = async () => {
     if (!newGoal.title.trim()) return;
     // Optimistic update — show new goal immediately with a temp id
-    const tempGoal = { ...newGoal, _id: `temp_${Date.now()}` };
+    const tempGoal = { ...newGoal, _id: `temp_${Date.now()}` } as CareerGoal;
     setProfile(prev => ({ ...prev, careerGoals: [...prev.careerGoals, tempGoal] }));
     setNewGoal({ title: '', description: '', priority: 'medium' });
     setIsSaving(true);
@@ -609,7 +595,7 @@ const Profile: React.FC = () => {
                     <button
                       onClick={() => {
                         console.log("Clicked delete for", skill._id);
-                        handleRemoveSkill(skill._id);
+                        if (skill._id) handleRemoveSkill(skill._id);
                       }}
                       className="ml-2 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200"
                     >
@@ -675,7 +661,7 @@ const Profile: React.FC = () => {
                       </div>
                     </div>
                     <button
-                      onClick={() => handleRemoveGoal(goal._id)}
+                      onClick={() => goal._id && handleRemoveGoal(goal._id)}
                       className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
                     >
                       <X className="w-4 h-4" />
