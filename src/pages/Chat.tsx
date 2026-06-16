@@ -125,7 +125,7 @@ const Chat: React.FC<ChatProps> = ({ onSessionUpdate }) => {
       const errorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         content:
-          (error as AxiosError)?.response?.data?.message ||
+          (error as AxiosError<{ message: string }>)?.response?.data?.message ||
           "I'm sorry, I encountered an error. Please try again.",
         role: "assistant",
         timestamp: new Date(),
