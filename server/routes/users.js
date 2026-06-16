@@ -11,15 +11,16 @@ const router = express.Router();
 router.get('/profile', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select('-password');
-    
+
     res.json({
       profile: {
         id: user._id,
         name: user.name,
         email: user.email,
-        background: user.background,
+        role: user.role,
+        onboardingCompleted: user.onboardingCompleted,
+        onboardingVersion: user.onboardingVersion,
         journeyIntent: user.journeyIntent,
-        onboardingProfile: user.onboardingProfile,
         profile: user.profile,
         skills: user.skills,
         careerGoals: user.careerGoals,
@@ -71,7 +72,7 @@ router.put('/profile', auth, [
     }
 
     const user = await User.findById(req.user._id);
-    
+
     // Update allowed fields
     const allowedUpdates = ['name'];
     allowedUpdates.forEach(field => {
@@ -82,7 +83,7 @@ router.put('/profile', auth, [
 
     // Update profile fields
     if (req.body.profile) {
-      const allowedProfileUpdates = ['bio', 'location', 'website', 'experience'];
+      const allowedProfileUpdates = ['bio', 'location', 'website', 'experience', 'interests', 'learningStyle', 'weeklyTime', 'confidenceLevel', 'institution', 'graduationYear', 'challenges'];
       allowedProfileUpdates.forEach(field => {
         if (req.body.profile[field] !== undefined) {
           if (!user.profile) user.profile = {};
@@ -192,7 +193,7 @@ router.put('/skills/:skillId', auth, [
 
     const { level } = req.body;
     const user = await User.findById(req.user._id);
-    
+
     const skill = user.skills.id(req.params.skillId);
     if (!skill) {
       return res.status(404).json({
@@ -327,7 +328,7 @@ router.put('/goals/:goalId', auth, [
 
     const user = await User.findById(req.user._id);
     const goal = user.careerGoals.id(req.params.goalId);
-    
+
     if (!goal) {
       return res.status(404).json({
         message: 'Career goal not found'
@@ -425,14 +426,14 @@ router.put('/preferences', auth, [
     }
 
     const user = await User.findById(req.user._id);
-    
+
     // Initialize preferences if not exists
     if (!user.preferences) {
       user.preferences = {};
     }
 
     // Update preferences
-    const allowedUpdates = ['jobLocation', 'jobType', 'remoteWork', 'salaryRange'];
+    const allowedUpdates = ['jobLocation', 'jobType', 'remoteWork', 'salaryRange', 'preferredCompanyTypes', 'dreamCompanies'];
     allowedUpdates.forEach(field => {
       if (req.body[field] !== undefined) {
         user.preferences[field] = req.body[field];
@@ -459,7 +460,7 @@ router.put('/preferences', auth, [
 router.get('/stats', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
-    
+
     const stats = {
       skillsCount: user.skills.length,
       goalsCount: user.careerGoals.length,
@@ -490,8 +491,8 @@ router.post('/onboarding', auth, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    if (!user.onboardingProfile) {
-      user.onboardingProfile = {};
+    if (!user.profile) {
+      user.profile = {};
     }
 
     const {
@@ -501,24 +502,120 @@ router.post('/onboarding', auth, async (req, res) => {
       learningStyle, careerGoalDesc, onboardingCompleted
     } = req.body;
 
-    // Update fields if provided
-    if (userType !== undefined) user.onboardingProfile.userType = userType;
-    if (interests !== undefined) user.onboardingProfile.interests = interests;
-    if (primaryGoal !== undefined) user.onboardingProfile.primaryGoal = primaryGoal;
-    if (skillLevel !== undefined) user.onboardingProfile.skillLevel = skillLevel;
-    if (knownSkills !== undefined) user.onboardingProfile.knownSkills = knownSkills;
-    if (weeklyTime !== undefined) user.onboardingProfile.weeklyTime = weeklyTime;
-    if (challenges !== undefined) user.onboardingProfile.challenges = challenges;
-    if (careerConfidence !== undefined) user.onboardingProfile.careerConfidence = careerConfidence;
-    if (institution !== undefined) user.onboardingProfile.institution = institution;
-    if (graduationYear !== undefined) user.onboardingProfile.graduationYear = graduationYear;
-    if (preferredCompanyTypes !== undefined) user.onboardingProfile.preferredCompanyTypes = preferredCompanyTypes;
-    if (dreamCompanies !== undefined) user.onboardingProfile.dreamCompanies = dreamCompanies;
-    if (learningStyle !== undefined) user.onboardingProfile.learningStyle = learningStyle;
-    if (careerGoalDesc !== undefined) user.onboardingProfile.careerGoalDesc = careerGoalDesc;
+    const roleMap = {
+      'school student': 'student',
+      'college student': 'student',
+      'recent graduate': 'student',
+      'working professional': 'professional',
+      'career switcher': 'career_switcher',
+      'freelancer': 'professional',
+      'entrepreneur': 'professional'
+    };
+
+    const confidenceMap = {
+      'completely lost': 'low',
+      'somewhat confused': 'low',
+      'have basic direction': 'medium',
+      'mostly clear': 'high',
+      'very clear': 'high'
+    };
+
+    const learningStyleMap = {
+      'video tutorials': 'visual',
+      'reading articles': 'reading',
+      'documentation': 'reading',
+      'hands-on projects': 'project_based',
+      'mentor guidance': 'interactive',
+      'community learning': 'interactive'
+    };
+
+    // Update Profile Preferences
+    if (interests !== undefined) user.profile.interests = interests;
+    
+    if (learningStyle !== undefined) {
+      const mappedStyle = learningStyleMap[learningStyle.toLowerCase()];
+      if (!mappedStyle) {
+        return res.status(400).json({ message: 'Invalid learningStyle selected' });
+      }
+      user.profile.learningStyle = mappedStyle;
+    }
+    
+    if (careerConfidence !== undefined) {
+      const mappedConfidence = confidenceMap[careerConfidence.toLowerCase()];
+      if (!mappedConfidence) {
+        return res.status(400).json({ message: 'Invalid careerConfidence selected' });
+      }
+      user.profile.confidenceLevel = mappedConfidence;
+    }
+    
+    if (weeklyTime !== undefined) {
+      if (typeof weeklyTime === 'string') {
+        const lowerTime = weeklyTime.toLowerCase();
+        if (lowerTime.includes('less than')) {
+          user.profile.weeklyTime = 4;
+        } else if (lowerTime.includes('more than')) {
+          user.profile.weeklyTime = 40;
+        } else {
+          const match = lowerTime.match(/(\d+)\s*-\s*(\d+)/);
+          if (match) {
+            user.profile.weeklyTime = Math.round((parseInt(match[1]) + parseInt(match[2])) / 2);
+          } else {
+            user.profile.weeklyTime = parseInt(lowerTime.replace(/\D/g, '')) || 0;
+          }
+        }
+      } else {
+        user.profile.weeklyTime = weeklyTime;
+      }
+    }
+    if (institution !== undefined) user.profile.institution = institution;
+    if (graduationYear !== undefined) user.profile.graduationYear = parseInt(graduationYear) || undefined;
+    if (challenges !== undefined) user.profile.challenges = challenges;
+
+    if (!user.preferences) user.preferences = {};
+    if (preferredCompanyTypes !== undefined) user.preferences.preferredCompanyTypes = preferredCompanyTypes;
+    if (dreamCompanies !== undefined) user.preferences.dreamCompanies = dreamCompanies;
+
+    // Role
+    if (userType !== undefined) {
+      const mappedRole = roleMap[userType.toLowerCase()];
+      if (!mappedRole) {
+        return res.status(400).json({ message: 'Invalid userType selected' });
+      }
+      user.role = mappedRole;
+    }
+
+    // Skills
+    if (knownSkills && Array.isArray(knownSkills)) {
+      knownSkills.forEach(skillName => {
+        if (!skillName) return;
+        const skillExists = user.skills.some(s => s.name.toLowerCase() === skillName.toLowerCase());
+        if (!skillExists) {
+          user.skills.push({
+            name: skillName.trim(),
+            level: skillLevel || 'beginner',
+            category: 'general',
+            verified: false
+          });
+        }
+      });
+    }
+
+    // Goals
+    if (primaryGoal) {
+      const goalExists = user.careerGoals.some(g => g.title.toLowerCase() === primaryGoal.toLowerCase());
+      if (!goalExists) {
+        user.careerGoals.push({
+          title: primaryGoal,
+          description: careerGoalDesc || '',
+          priority: 'high',
+          completed: false
+        });
+      }
+    }
 
     if (onboardingCompleted !== undefined) {
-       user.onboardingCompleted = onboardingCompleted;
+      user.onboardingCompleted = onboardingCompleted;
+      user.onboardingVersion = 1;
     }
 
     await user.save();
@@ -529,8 +626,12 @@ router.post('/onboarding', auth, async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        onboardingProfile: user.onboardingProfile,
-        onboardingCompleted: user.onboardingCompleted
+        role: user.role,
+        profile: user.profile,
+        skills: user.skills,
+        careerGoals: user.careerGoals,
+        onboardingCompleted: user.onboardingCompleted,
+        onboardingVersion: user.onboardingVersion
       }
     });
   } catch (error) {

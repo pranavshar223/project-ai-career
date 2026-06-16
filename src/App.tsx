@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -13,6 +13,7 @@ import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import Tasks from './pages/Tasks';
 import Resources from './pages/Resources';
+import Onboarding from './pages/Onboarding';
 
 interface RouteProps {
   children: React.ReactNode;
@@ -20,14 +21,31 @@ interface RouteProps {
 
 const PrivateRoute: React.FC<RouteProps> = ({ children }) => {
   const { user, isAuthLoading } = useAuth();
+  const location = useLocation();
+
   if (isAuthLoading) return <div>Loading...</div>;
-  return user ? <>{children}</> : <Navigate to="/auth" />;
+  if (!user) return <Navigate to="/auth" />;
+
+  if (!user.onboardingCompleted && location.pathname !== '/onboarding') {
+    return <Navigate to="/onboarding" />;
+  }
+  
+  if (user.onboardingCompleted && location.pathname === '/onboarding') {
+    return <Navigate to="/dashboard" />;
+  }
+
+  return <>{children}</>;
 };
 
 const PublicRoute: React.FC<RouteProps> = ({ children }) => {
   const { user, isAuthLoading } = useAuth();
   if (isAuthLoading) return <div>Loading...</div>;
-  return !user ? <>{children}</> : <Navigate to="/dashboard" />;
+  
+  if (user) {
+    return !user.onboardingCompleted ? <Navigate to="/onboarding" /> : <Navigate to="/dashboard" />;
+  }
+  
+  return <>{children}</>;
 };
 
 // ── Jobs page wrapper: lifts filter state up so Sidebar can access it ──
@@ -148,6 +166,14 @@ const AppContent: React.FC = () => {
           <PublicRoute>
             <AuthForm />
           </PublicRoute>
+        }
+      />
+      <Route
+        path="/onboarding"
+        element={
+          <PrivateRoute>
+            <Onboarding />
+          </PrivateRoute>
         }
       />
       <Route

@@ -9,7 +9,6 @@ const AuthForm: React.FC = () => {
     name: '',
     email: '',
     password: '',
-    background: 'professional' as 'student' | 'professional',
   });
   const [error, setError] = useState('');
 
@@ -23,7 +22,7 @@ const AuthForm: React.FC = () => {
       if (isLogin) {
         await login(formData.email, formData.password);
       } else {
-        await register(formData.email, formData.password, formData.name, formData.background);
+        await register(formData.email, formData.password, formData.name);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Authentication failed');
@@ -132,23 +131,7 @@ const AuthForm: React.FC = () => {
                 </div>
               </div>
 
-              {!isLogin && (
-                <div>
-                  <label htmlFor="background" className="block text-sm font-medium text-slate-300 mb-2">
-                    I am a...
-                  </label>
-                  <select
-                    id="background"
-                    name="background"
-                    value={formData.background}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-lg text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none"
-                  >
-                    <option value="student">Student</option>
-                    <option value="professional">Professional</option>
-                  </select>
-                </div>
-              )}
+
 
               <button
                 type="submit"

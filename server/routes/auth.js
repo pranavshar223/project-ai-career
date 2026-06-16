@@ -46,7 +46,9 @@ router.post('/register', [
         id: user._id,
         name: user.name,
         email: user.email,
-        background: user.background,
+        role: user.role,
+        onboardingCompleted: user.onboardingCompleted,
+        onboardingVersion: user.onboardingVersion,
         createdAt: user.createdAt
       }
     });
@@ -95,7 +97,9 @@ router.post('/login', [
         id: user._id,
         name: user.name,
         email: user.email,
-        background: user.background,
+        role: user.role,
+        onboardingCompleted: user.onboardingCompleted,
+        onboardingVersion: user.onboardingVersion,
         createdAt: user.createdAt,
         lastLogin: user.lastLogin
       }
@@ -115,7 +119,10 @@ router.get('/me', auth, async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        background: user.background,
+        role: user.role,
+        onboardingCompleted: user.onboardingCompleted,
+        onboardingVersion: user.onboardingVersion,
+        journeyIntent: user.journeyIntent,
         profile: user.profile,
         skills: user.skills,
         careerGoals: user.careerGoals,
@@ -146,7 +153,10 @@ router.get('/verify', auth, async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        background: user.background,
+        role: user.role,
+        onboardingCompleted: user.onboardingCompleted,
+        onboardingVersion: user.onboardingVersion,
+        journeyIntent: user.journeyIntent,
         profile: user.profile,
         skills: user.skills,
         careerGoals: user.careerGoals,
