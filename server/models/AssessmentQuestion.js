@@ -7,4 +7,6 @@ const assessmentQuestionSchema = new mongoose.Schema({
   correctAnswer: { type: String, required: true }
 }, { timestamps: true });
 
+assessmentQuestionSchema.index({ assessmentId: 1, createdAt: 1 });
+
 module.exports = mongoose.model('AssessmentQuestion', assessmentQuestionSchema);
