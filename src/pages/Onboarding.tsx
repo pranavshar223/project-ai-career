@@ -178,14 +178,11 @@ const Onboarding: React.FC = () => {
   const progressPercent = Math.max(0, Math.min(100, (currentStep / totalSteps) * 100));
 
   const saveProgress = async (newAnswers: Record<string, any>, isFinal = false) => {
-    try {
-      await axios.post('/users/onboarding', {
-        ...newAnswers,
-        ...(isFinal ? { onboardingCompleted: true } : {})
-      });
-    } catch (err) {
-      console.error('Failed to auto-save onboarding progress', err);
-    }
+    const res = await axios.post('/users/onboarding', {
+      ...newAnswers,
+      ...(isFinal ? { onboardingCompleted: true } : {})
+    });
+    return res.data;
   };
 
   const handleNext = async () => {
@@ -202,7 +199,9 @@ const Onboarding: React.FC = () => {
 
     // Auto-save progress in background
     if (currentQ.field) {
-      saveProgress({ [currentQ.field]: answers[currentQ.field] });
+      saveProgress({ [currentQ.field]: answers[currentQ.field] }).catch(err => {
+        console.error('Failed to auto-save onboarding progress', err);
+      });
     }
 
     if (step < questions.length - 1) {
@@ -221,10 +220,14 @@ const Onboarding: React.FC = () => {
 
     try {
       // Final save marking as completed
-      await saveProgress(answers, true);
+      const data = await saveProgress(answers, true);
       
-      completeOnboarding();
-      navigate('/dashboard'); 
+      if (data.user) {
+        completeOnboarding(data.user);
+        navigate('/dashboard'); 
+      } else {
+        throw new Error('No user data returned');
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Something went wrong. Please try again.');
       setIsSubmitting(false);

@@ -8,12 +8,8 @@ axios.defaults.baseURL = API_BASE_URL;
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (
-    email: string,
-    password: string,
-    name: string,
-    background: 'student' | 'professional'
-  ) => Promise<void>;
+  register: (email: string, password: string, name: string) => Promise<void>;
+  completeOnboarding: (updatedUser: User) => void;
   logout: () => void;
   isLoading: boolean;
   isAuthLoading: boolean;
@@ -62,6 +58,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.removeItem('user');
   }, []);
 
+  const completeOnboarding = useCallback((updatedUser: User) => {
+    setUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+  }, []);
+
   const verifyToken = useCallback(async (savedToken: string) => {
     try {
       const res = await axios.get('/auth/verify', {
@@ -96,19 +97,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const register = async (
-    email: string,
-    password: string,
-    name: string,
-    background: 'student' | 'professional'
-  ) => {
+  const register = async (email: string, password: string, name: string) => {
     setIsLoading(true);
     try {
       const res = await axios.post('/auth/register', {
         email,
         password,
         name,
-        background,
       });
       const { token, user } = res.data;
       setToken(token);
@@ -154,6 +149,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         login,
         register,
         logout,
+        completeOnboarding,
         isLoading,
         token,
         isAuthLoading,

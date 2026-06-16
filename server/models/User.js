@@ -21,29 +21,22 @@ const userSchema = new mongoose.Schema({
     minlength: [6, 'Password must be at least 6 characters'],
     select: false
   },
-  background: {
+  role: {
     type: String,
-    enum: ['student', 'professional']
+    enum: ['student', 'professional', 'career_switcher'],
+    default: 'professional'
   },
   journeyIntent: {
     type: String,
     enum: ['focused', 'exploring', 'career_change']
   },
-  onboardingProfile: {
-    userType: String,
-    interests: [String],
-    primaryGoal: String,
-    skillLevel: String,
-    knownSkills: [String],
-    weeklyTime: String,
-    challenges: [String],
-    careerConfidence: String,
-    institution: String,
-    graduationYear: Number,
-    preferredCompanyTypes: [String],
-    dreamCompanies: String,
-    learningStyle: String,
-    careerGoalDesc: String
+  onboardingCompleted: {
+    type: Boolean,
+    default: false
+  },
+  onboardingVersion: {
+    type: Number,
+    default: 1
   },
   profile: {
     bio: String,
@@ -54,7 +47,20 @@ const userSchema = new mongoose.Schema({
       enum: ['0-1 years', '2 years', '3-5 years', '5+ years'],
       default: '0-1 years'
     },
-    avatar: String
+    avatar: String,
+    interests: [String],
+    learningStyle: {
+      type: String,
+      enum: ["visual", "reading", "project_based", "interactive", ""]
+    },
+    weeklyTime: Number,
+    confidenceLevel: {
+      type: String,
+      enum: ["low", "medium", "high", ""]
+    },
+    institution: String,
+    graduationYear: Number,
+    challenges: [String]
   },
   skills: [{
     name: {
@@ -67,6 +73,10 @@ const userSchema = new mongoose.Schema({
       default: 'beginner'
     },
     category: String,
+    verified: {
+      type: Boolean,
+      default: false
+    },
     addedAt: {
       type: Date,
       default: Date.now
@@ -100,7 +110,9 @@ const userSchema = new mongoose.Schema({
     remoteWork: {
       type: Boolean,
       default: true
-    }
+    },
+    preferredCompanyTypes: [String],
+    dreamCompanies: String
   },
   streak: {
     current: {
@@ -207,10 +219,6 @@ const userSchema = new mongoose.Schema({
     default: true
   },
   lastLogin: Date,
-  onboardingCompleted: {
-    type: Boolean,
-    default: false
-  },
   subscriptionTier: {
     type: String,
     enum: ['free', 'premium', 'enterprise'],

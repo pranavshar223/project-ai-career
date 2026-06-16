@@ -2,8 +2,12 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  background: 'student' | 'professional';
+  role: 'student' | 'professional' | 'career_switcher';
+  onboardingCompleted: boolean;
+  onboardingVersion?: number;
+  journeyIntent?: 'focused' | 'exploring' | 'career_change';
   createdAt: Date;
+  lastLogin?: Date;
 }
 
 export interface Skill {
