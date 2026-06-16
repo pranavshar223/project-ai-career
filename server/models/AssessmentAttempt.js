@@ -7,4 +7,7 @@ const assessmentAttemptSchema = new mongoose.Schema({
   passed: { type: Boolean, required: true }
 }, { timestamps: true });
 
+assessmentAttemptSchema.index({ userId: 1, assessmentId: 1, createdAt: -1 });
+assessmentAttemptSchema.index({ assessmentId: 1, createdAt: -1 });
+
 module.exports = mongoose.model('AssessmentAttempt', assessmentAttemptSchema);
