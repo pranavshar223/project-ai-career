@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import axios, { AxiosError } from "axios";
-import { TrendingUp, Target, BookOpen, Users, Plus, RefreshCw, AlertCircle } from "lucide-react";
+import { TrendingUp, Target, BookOpen, Users, RefreshCw, AlertCircle } from "lucide-react";
 import SkillGapChart from "../components/Dashboard/SkillGapChart";
 import StreakTracker from "../components/Dashboard/StreakTracker";
 import RoadmapTimeline from "../components/Dashboard/RoadmapTimeline";
@@ -16,18 +16,8 @@ const Dashboard: React.FC = () => {
   const [userProfile, setUserProfile] = useState<User | null>(null);
   const [analytics, setAnalytics] = useState<DashboardAnalytics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isGenerating, setIsGenerating] = useState(false);
   const [isAdapting, setIsAdapting] = useState(false);
   const [adaptationMessage, setAdaptationMessage] = useState<string | null>(null);
-  const [generateError, setGenerateError] = useState<string | null>(null);
-
-  // Generate roadmap form state
-  const [showGenerateForm, setShowGenerateForm] = useState(false);
-  const [generateForm, setGenerateForm] = useState({
-    careerGoal: "",
-    targetRole: "",
-    timeframe: "6-months"
-  });
 
   const authHeaders = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
 
@@ -73,34 +63,6 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     loadDashboardData();
   }, [loadDashboardData]);
-
-  // ─── Generate Roadmap ─────────────────────────────────────────
-  const handleGenerateRoadmap = async () => {
-    if (!generateForm.careerGoal.trim()) {
-      setGenerateError("Please enter a career goal.");
-      return;
-    }
-    setIsGenerating(true);
-    setGenerateError(null);
-    try {
-      const res = await axios.post(
-        "/roadmaps/generate",
-        generateForm,
-        { headers: authHeaders }
-      );
-      const newRoadmap = res.data.roadmap;
-      setActiveRoadmap(newRoadmap);
-      setRoadmapItems(newRoadmap.items || []);
-      setShowGenerateForm(false);
-      setGenerateForm({ careerGoal: "", targetRole: "", timeframe: "6-months" });
-    } catch (error) {
-      setGenerateError(
-        (error as AxiosError)?.response?.data?.error || (error as AxiosError)?.response?.data?.message || "Failed to generate roadmap. Please try again."
-      );
-    } finally {
-      setIsGenerating(false);
-    }
-  };
 
   // ─── Toggle Item (with auto-adapt) ───────────────────────────
   const handleToggleRoadmapItem = async (itemId: string) => {
@@ -218,13 +180,6 @@ const Dashboard: React.FC = () => {
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Career Dashboard</h1>
             <p className="text-gray-600 dark:text-gray-400 mt-2">Track your progress and stay on top of your career goals</p>
           </div>
-          <button
-            onClick={() => setShowGenerateForm(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            {activeRoadmap ? "New Roadmap" : "Generate Roadmap"}
-          </button>
         </div>
 
         {/* Adaptation Message */}
@@ -232,95 +187,6 @@ const Dashboard: React.FC = () => {
           <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl flex items-center gap-3">
             <RefreshCw className={`w-5 h-5 text-blue-600 dark:text-blue-400 ${isAdapting ? 'animate-spin' : ''}`} />
             <p className="text-blue-800 dark:text-blue-300 font-medium">{adaptationMessage}</p>
-          </div>
-        )}
-
-        {/* Generate Roadmap Modal */}
-        {showGenerateForm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-8 w-full max-w-md mx-4 border border-gray-200 dark:border-gray-700">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Generate Your Roadmap</h2>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Career Goal <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Data Scientist, Full Stack Developer"
-                    value={generateForm.careerGoal}
-                    onChange={e => setGenerateForm(f => ({ ...f, careerGoal: e.target.value }))}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Target Role <span className="text-gray-400 dark:text-gray-500">(optional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. ML Engineer at Google"
-                    value={generateForm.targetRole}
-                    onChange={e => setGenerateForm(f => ({ ...f, targetRole: e.target.value }))}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Timeframe</label>
-                  <select
-                    value={generateForm.timeframe}
-                    onChange={e => setGenerateForm(f => ({ ...f, timeframe: e.target.value }))}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="3-months">3 Months</option>
-                    <option value="6-months">6 Months</option>
-                    <option value="1-year">1 Year</option>
-                    <option value="2-years">2 Years</option>
-                  </select>
-                </div>
-
-                {generateError && (
-                  <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-400 text-sm">
-                    {generateError}
-                  </div>
-                )}
-              </div>
-
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={() => { setShowGenerateForm(false); setGenerateError(null); }}
-                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleGenerateRoadmap}
-                  disabled={isGenerating}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-60 transition-colors"
-                >
-                  {isGenerating ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="w-4 h-4" />
-                      Generate
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {isGenerating && (
-                <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-3">
-                  AI is building your personalized roadmap... this may take 10-20 seconds.
-                </p>
-              )}
-            </div>
           </div>
         )}
 
@@ -406,15 +272,9 @@ const Dashboard: React.FC = () => {
                   Generate your personalized AI career roadmap to get started.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                  <button
-                    onClick={() => setShowGenerateForm(true)}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    Generate Roadmap
-                  </button>
                   <Link
                     to="/chat"
-                    className="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     Ask AI in Chat
                   </Link>
