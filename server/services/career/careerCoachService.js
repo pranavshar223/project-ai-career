@@ -13,9 +13,17 @@ class CareerCoachService {
       // Call AI provider (routes to Gemma, Flash, or OpenRouter automatically)
       // Pass userId so the provider can respect user's AI settings
       const data = await executeApiCall(prompt, 'career_chat', true, userId);
+      
+      let responseText;
+      if (Array.isArray(data)) {
+        responseText = data[0]?.advice || data[0]?.content || data[0]?.message || data[0]?.text || data;
+      } else {
+        responseText = data.advice || data.content || data.message || data.text || data;
+      }
+
       return {
-        content: this.formatResponse(data.advice || data),
-        metadata: this.sanitizeMetadata(data.metadata),
+        content: this.formatResponse(responseText),
+        metadata: this.sanitizeMetadata(data.metadata || (Array.isArray(data) ? data[0]?.metadata : undefined)),
         source: 'ai-coach'
       };
     } catch (error) {
@@ -25,7 +33,11 @@ class CareerCoachService {
   }
 
   formatResponse(response) {
-    if (typeof response !== 'string') return JSON.stringify(response);
+    if (typeof response !== 'string') {
+      const summary = Array.isArray(response) ? `Array(${response.length})` : (response ? `Object keys: ${Object.keys(response).join(', ')}` : String(response));
+      logger.warn(`Unexpected AI response schema. Shape: ${summary}`);
+      return "I couldn't generate a valid coaching response. Please try again.";
+    }
     return response.replace(/\n{3,}/g, '\n\n').trim();
   }
 
