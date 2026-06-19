@@ -1,7 +1,7 @@
 const express = require('express');
 const auth = require('../middleware/auth');
 const AISettings = require('../models/AISettings');
-const { modelRegistry, presets } = require('../services/ai/modelRegistry');
+const { modelRegistry, presets, tasks } = require('../services/ai/modelRegistry');
 const aiConfig = require('../services/ai/aiConfig');
 const router = express.Router();
 
@@ -11,7 +11,8 @@ const router = express.Router();
 router.get('/registry', auth, (req, res) => {
   res.json({
     models: modelRegistry,
-    systemDefaultProvider: aiConfig.provider
+    systemDefaultProvider: aiConfig.provider,
+    tasks: tasks
   });
 });
 

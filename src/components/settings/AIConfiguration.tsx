@@ -25,6 +25,7 @@ const AIConfiguration: React.FC = () => {
   const [models, setModels] = useState<AIModel[]>([]);
   const [preferences, setPreferences] = useState<AIPreferences>({ activeProvider: 'system_default', taskModels: {} });
   const [systemProvider, setSystemProvider] = useState<string>('');
+  const [tasks, setTasks] = useState<{id: string, name: string, purpose: string}[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -36,11 +37,12 @@ const AIConfiguration: React.FC = () => {
     try {
       setLoading(true);
       const [registryRes, prefsRes] = await Promise.all([
-        axios.get('/ai-config/registry'),
-        axios.get('/ai-config/preferences')
+        axios.get('/api/ai-config/registry'),
+        axios.get('/api/ai-config/preferences')
       ]);
       setModels(registryRes.data.models);
       setSystemProvider(registryRes.data.systemDefaultProvider);
+      if (registryRes.data.tasks) setTasks(registryRes.data.tasks);
       
       const prefs = prefsRes.data;
       if (!prefs.taskModels) prefs.taskModels = {};
@@ -55,7 +57,7 @@ const AIConfiguration: React.FC = () => {
   const handleProviderChange = async (provider: string) => {
     try {
       setSaving(true);
-      const res = await axios.put('/ai-config/preferences', { activeProvider: provider });
+      const res = await axios.put('/api/ai-config/preferences', { activeProvider: provider });
       setPreferences(res.data.settings);
     } catch (error) {
       console.error('Error updating provider:', error);
@@ -68,7 +70,7 @@ const AIConfiguration: React.FC = () => {
     try {
       setSaving(true);
       const newModels = { ...preferences.taskModels, [taskType]: modelId };
-      const res = await axios.put('/ai-config/preferences', { taskModels: newModels });
+      const res = await axios.put('/api/ai-config/preferences', { taskModels: newModels });
       setPreferences(res.data.settings);
     } catch (error) {
       console.error('Error updating model:', error);
@@ -80,7 +82,7 @@ const AIConfiguration: React.FC = () => {
   const handlePreset = async (presetName: string) => {
     try {
       setSaving(true);
-      const res = await axios.post('/ai-config/preferences/presets', { presetName });
+      const res = await axios.post('/api/ai-config/preferences/presets', { presetName });
       setPreferences(res.data.settings);
     } catch (error) {
       console.error('Error applying preset:', error);
@@ -95,13 +97,7 @@ const AIConfiguration: React.FC = () => {
 
   const activeProvider = preferences.activeProvider === 'system_default' ? systemProvider : preferences.activeProvider;
 
-  const tasks = [
-    { id: 'career_chat', name: 'Career Chat', purpose: 'Fast responses for career conversations.' },
-    { id: 'generate_roadmap', name: 'Roadmap Generation', purpose: 'Generate highly structured career roadmaps.' },
-    { id: 'resume_review', name: 'Resume Review', purpose: 'Analyze resumes and provide ATS suggestions.' },
-    { id: 'skill_gap', name: 'Skill Gap Analysis', purpose: 'Compare skills against target role.' },
-    { id: 'interview', name: 'Interview Coach', purpose: 'Evaluate interview answers.' },
-  ];
+
 
   return (
     <div className="space-y-8 animate-fade-in">

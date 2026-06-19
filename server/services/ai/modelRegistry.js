@@ -129,8 +129,18 @@ const presets = {
   }
 };
 
+const tasks = [
+  { id: 'career_chat', name: 'Career Chat', purpose: 'Fast responses for career conversations.' },
+  { id: 'generate_roadmap', name: 'Roadmap Generation', purpose: 'Generate highly structured career roadmaps.' },
+  { id: 'adapt_roadmap', name: 'Roadmap Adaptation', purpose: 'Modify existing roadmaps based on progress.' },
+  { id: 'resume_review', name: 'Resume Review', purpose: 'Analyze resumes and provide ATS suggestions.' },
+  { id: 'skill_gap', name: 'Skill Gap Analysis', purpose: 'Compare skills against target role.' },
+  { id: 'interview', name: 'Interview Coach', purpose: 'Evaluate interview answers.' }
+];
+
 module.exports = {
   modelRegistry,
   getFallbackModel,
-  presets
+  presets,
+  tasks
 };

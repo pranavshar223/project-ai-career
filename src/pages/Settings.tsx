@@ -32,15 +32,15 @@ const Settings: React.FC = () => {
               <BrainCircuit className="w-5 h-5" />
               <span>AI Configuration</span>
             </button>
-            <button className="w-full flex items-center space-x-3 px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl font-medium transition-colors opacity-50 cursor-not-allowed">
+            <button disabled className="w-full flex items-center space-x-3 px-4 py-3 text-gray-600 dark:text-gray-400 rounded-xl font-medium transition-colors opacity-50 cursor-not-allowed">
               <Bell className="w-5 h-5" />
               <span>Notifications</span>
             </button>
-            <button className="w-full flex items-center space-x-3 px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl font-medium transition-colors opacity-50 cursor-not-allowed">
+            <button disabled className="w-full flex items-center space-x-3 px-4 py-3 text-gray-600 dark:text-gray-400 rounded-xl font-medium transition-colors opacity-50 cursor-not-allowed">
               <Shield className="w-5 h-5" />
               <span>Privacy & Security</span>
             </button>
-            <button className="w-full flex items-center space-x-3 px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl font-medium transition-colors opacity-50 cursor-not-allowed">
+            <button disabled className="w-full flex items-center space-x-3 px-4 py-3 text-gray-600 dark:text-gray-400 rounded-xl font-medium transition-colors opacity-50 cursor-not-allowed">
               <Key className="w-5 h-5" />
               <span>Account</span>
             </button>

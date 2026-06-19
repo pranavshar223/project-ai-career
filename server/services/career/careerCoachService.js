@@ -30,13 +30,13 @@ class CareerCoachService {
   }
 
   sanitizeMetadata(metadata) {
-    if (!metadata) return {};
+    const md = metadata || {};
     const validSentiments = ['positive', 'neutral', 'negative'];
-    let sentiment = metadata.sentiment?.toLowerCase();
+    let sentiment = md.sentiment?.toLowerCase();
     if (!validSentiments.includes(sentiment)) {
       sentiment = 'neutral';
     }
-    return { ...metadata, sentiment, usedModel: metadata.usedModel };
+    return { ...md, sentiment, usedModel: md.usedModel };
   }
 
   detectIntent(message) {
