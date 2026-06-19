@@ -6,7 +6,7 @@ const AppError = require('../../utils/AppError');
 
 class RoadmapService {
   async execute(payload) {
-    const { careerGoal, context } = payload;
+    const { careerGoal, context, userId } = payload;
     const { userProfile = {}, targetRole, timeframe = '6-months' } = context || {};
 
     const userSkills = userProfile.skills?.map(s => `${s.name} (${s.level})`).join(', ') || 'None';
@@ -37,7 +37,7 @@ class RoadmapService {
 
     try {
       logger.info(`Generating roadmap for goal: ${finalGoal}`);
-      const data = await executeApiCall(prompt, 'generate_roadmap', true);
+      const data = await executeApiCall(prompt, 'generate_roadmap', true, userId);
       return validateAndNormalizeRoadmap(data, finalGoal, totalWeeks);
     } catch (error) {
       logger.error('AI roadmap generation failed:', error);

@@ -5,20 +5,34 @@ const { retryHandler } = require('./retryHandler');
 const { parseJsonResponse, extractTextResponse } = require('./responseParser');
 const AppError = require('../../utils/AppError');
 
-async function executeApiCall(prompt, taskType, expectJson = true) {
+async function executeApiCall(prompt, taskType, expectJson = true, userId = null) {
   return retryHandler(async () => {
-    if (aiConfig.provider === 'openrouter') {
-      return callOpenRouter(prompt, taskType, expectJson);
-    } else if (aiConfig.provider === 'gemini') {
-      return callGemini(prompt, taskType, expectJson);
+    const { model, provider } = await getModel(taskType, userId);
+
+    let result;
+    if (provider === 'openrouter') {
+      result = await callOpenRouter(prompt, model, expectJson);
+    } else if (provider === 'gemini') {
+      result = await callGemini(prompt, model, expectJson);
     } else {
       throw new AppError('AI_CONFIG_ERROR', 'No AI provider API key is set', 500);
     }
+    
+    // Attach the model used so we can display it in the UI
+    if (expectJson && typeof result === 'object' && result !== null) {
+      if (!result.metadata) result.metadata = {};
+      result.metadata.usedModel = result._actualModel || model;
+      delete result._actualModel;
+    } else if (!expectJson && typeof result === 'string') {
+      // If it's a string, we can't easily attach it without wrapping, but we expect JSON for chat.
+      // We'll wrap it in an object for career_chat if needed, but career_chat uses expectJson=true.
+    }
+    
+    return result;
   });
 }
 
-async function callOpenRouter(prompt, taskType, expectJson) {
-  const model = getModel(taskType);
+async function callOpenRouter(prompt, model, expectJson) {
   
   const apiResponse = await axios.post(
     aiConfig.openRouterUrl,
@@ -41,15 +55,21 @@ async function callOpenRouter(prompt, taskType, expectJson) {
   const rawText = apiResponse.data.choices?.[0]?.message?.content;
   if (!rawText) throw new Error('Empty response from OpenRouter API');
 
+  let parsed;
   if (expectJson) {
-    return parseJsonResponse(rawText);
+    parsed = parseJsonResponse(rawText);
+  } else {
+    parsed = extractTextResponse(rawText);
   }
-  return extractTextResponse(rawText);
+  
+  if (typeof parsed === 'object' && parsed !== null) {
+    parsed._actualModel = apiResponse.data.model;
+  }
+  return parsed;
 }
 
-async function callGemini(prompt, taskType, expectJson) {
+async function callGemini(prompt, model, expectJson) {
   // Replace {MODEL} in the URL template with the actual model
-  const model = getModel(taskType);
   // Remove "models/" if it's prepended, the URL format might vary. Assuming model is "gemini-2.5-flash-lite".
   const url = `${aiConfig.geminiUrl.replace('{MODEL}', model)}/${model}:generateContent?key=${aiConfig.geminiApiKey}`;
 

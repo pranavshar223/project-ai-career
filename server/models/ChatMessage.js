@@ -48,6 +48,7 @@ const chatMessageSchema = new mongoose.Schema({
     default: 'low'
   },
   experienceLevel: String,
+  usedModel: String,
   responseQuality: {
     type: Number,
     min: 0,

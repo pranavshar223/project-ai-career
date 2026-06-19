@@ -5,7 +5,7 @@ const AppError = require('../../utils/AppError');
 
 class RoadmapAdapter {
   async execute(payload) {
-    const { roadmap, triggerType, triggeredItem } = payload;
+    const { roadmap, triggerType, triggeredItem, userId } = payload;
 
     const completedItems = roadmap.items.filter(i => i.completed);
     const missedItems = roadmap.items.filter(i => i.status === 'missed');
@@ -18,7 +18,7 @@ class RoadmapAdapter {
 
     try {
       logger.info(`Adapting roadmap for trigger: ${triggerType}`);
-      const data = await executeApiCall(prompt, 'adapt_roadmap', true);
+      const data = await executeApiCall(prompt, 'adapt_roadmap', true, userId);
       return data; // Returns the raw adaptation JSON
     } catch (error) {
       logger.error('AI roadmap adaptation failed:', error);
