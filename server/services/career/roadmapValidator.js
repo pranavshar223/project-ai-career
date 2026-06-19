@@ -10,9 +10,17 @@ function validateAndNormalizeRoadmap(data, careerGoal, totalWeeks) {
 
   const normalizedItems = data.items.map((item, index) => {
     const weekNum = item.weekNumber || (index + 1);
-    const dueDate = item.dueDate
-      ? new Date(item.dueDate)
-      : new Date(today.getTime() + weekNum * 7 * 24 * 60 * 60 * 1000);
+    let dueDate;
+    if (item.dueDate) {
+      const parsed = new Date(item.dueDate);
+      if (!isNaN(parsed.getTime())) {
+        dueDate = parsed;
+      }
+    }
+    
+    if (!dueDate) {
+      dueDate = new Date(today.getTime() + weekNum * 7 * 24 * 60 * 60 * 1000);
+    }
 
     return {
       title: item.title || `Step ${index + 1}`,

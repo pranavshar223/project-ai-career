@@ -13,8 +13,11 @@ class CareerCoachService {
       // Call AI provider (routes to Gemma, Flash, or OpenRouter automatically)
       // Pass userId so the provider can respect user's AI settings
       const data = await executeApiCall(prompt, 'career_chat', true, userId);
+      
+      const responseText = data.advice || data.content || data.message || data.text || data;
+
       return {
-        content: this.formatResponse(data.advice || data),
+        content: this.formatResponse(responseText),
         metadata: this.sanitizeMetadata(data.metadata),
         source: 'ai-coach'
       };
@@ -25,7 +28,10 @@ class CareerCoachService {
   }
 
   formatResponse(response) {
-    if (typeof response !== 'string') return JSON.stringify(response);
+    if (typeof response !== 'string') {
+      logger.warn(`Unexpected AI response schema: ${JSON.stringify(response)}`);
+      return "I couldn't generate a valid coaching response. Please try again.";
+    }
     return response.replace(/\n{3,}/g, '\n\n').trim();
   }
 
