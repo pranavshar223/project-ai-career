@@ -14,11 +14,16 @@ class CareerCoachService {
       // Pass userId so the provider can respect user's AI settings
       const data = await executeApiCall(prompt, 'career_chat', true, userId);
       
-      const responseText = data.advice || data.content || data.message || data.text || data;
+      let responseText;
+      if (Array.isArray(data)) {
+        responseText = data[0]?.advice || data[0]?.content || data[0]?.message || data[0]?.text || data;
+      } else {
+        responseText = data.advice || data.content || data.message || data.text || data;
+      }
 
       return {
         content: this.formatResponse(responseText),
-        metadata: this.sanitizeMetadata(data.metadata),
+        metadata: this.sanitizeMetadata(data.metadata || (Array.isArray(data) ? data[0]?.metadata : undefined)),
         source: 'ai-coach'
       };
     } catch (error) {
@@ -29,7 +34,8 @@ class CareerCoachService {
 
   formatResponse(response) {
     if (typeof response !== 'string') {
-      logger.warn(`Unexpected AI response schema: ${JSON.stringify(response)}`);
+      const summary = Array.isArray(response) ? `Array(${response.length})` : (response ? `Object keys: ${Object.keys(response).join(', ')}` : String(response));
+      logger.warn(`Unexpected AI response schema. Shape: ${summary}`);
       return "I couldn't generate a valid coaching response. Please try again.";
     }
     return response.replace(/\n{3,}/g, '\n\n').trim();

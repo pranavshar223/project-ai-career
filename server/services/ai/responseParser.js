@@ -28,22 +28,54 @@ function parseJsonResponse(rawText) {
     const lastBracket = text.lastIndexOf(']');
 
     let start = -1;
-    let end = -1;
+    let openChar, closeChar;
 
-    // Find the outermost valid JSON structure
-    if (firstBrace !== -1 && lastBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
+    if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
       start = firstBrace;
-      end = lastBrace;
-    } else if (firstBracket !== -1 && lastBracket !== -1) {
+      openChar = '{'; closeChar = '}';
+    } else if (firstBracket !== -1) {
       start = firstBracket;
-      end = lastBracket;
+      openChar = '['; closeChar = ']';
     }
 
-    if (start !== -1 && end !== -1 && end > start) {
-      const jsonBlock = text.substring(start, end + 1);
-      try {
-        parsed = JSON.parse(jsonBlock);
-      } catch (innerError) {
+    if (start !== -1) {
+      let count = 0;
+      let inString = false;
+      let escapeNext = false;
+      let end = -1;
+
+      for (let i = start; i < text.length; i++) {
+        const char = text[i];
+        if (escapeNext) {
+          escapeNext = false;
+          continue;
+        }
+        if (char === '\\') {
+          escapeNext = true;
+          continue;
+        }
+        if (char === '"') {
+          inString = !inString;
+          continue;
+        }
+        if (!inString) {
+          if (char === openChar) count++;
+          else if (char === closeChar) count--;
+          if (count === 0) {
+            end = i;
+            break;
+          }
+        }
+      }
+
+      if (end !== -1) {
+        const jsonBlock = text.substring(start, end + 1);
+        try {
+          parsed = JSON.parse(jsonBlock);
+        } catch (innerError) {
+          throw new AppError('AI_PARSE_ERROR', 'Extracted JSON block is invalid', 500);
+        }
+      } else {
         throw new AppError('AI_PARSE_ERROR', 'Extracted JSON block is invalid', 500);
       }
     } else {
@@ -51,16 +83,12 @@ function parseJsonResponse(rawText) {
     }
   }
 
-  // Handle Array-Based Responses
-  if (Array.isArray(parsed)) {
-    parsed = parsed[0] || {};
-  }
-
   return parsed;
 }
 
 function extractTextResponse(rawText) {
-  let text = rawText ? rawText.trim() : '';
+  if (!rawText || typeof rawText !== 'string') return '';
+  let text = rawText.trim();
   text = text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
   return text.replace(/\n{3,}/g, '\n\n').trim();
 }
