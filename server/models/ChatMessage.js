@@ -76,8 +76,8 @@ const chatMessageSchema = new mongoose.Schema({
   },
   source: {
     type: String,
-    enum: ['gemini-api', 'fallback', 'mock'],
-    default: 'gemini-api'
+    enum: ['gemini-api', 'openrouter-api', 'ai-coach', 'fallback', 'mock'],
+    default: 'ai-coach'
   }
 }, {
   timestamps: true
