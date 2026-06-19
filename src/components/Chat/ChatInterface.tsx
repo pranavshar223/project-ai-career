@@ -33,6 +33,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   };
 
+  const lastAssistantMsg = [...messages].reverse().find(m => m.role === 'assistant' && m.metadata?.usedModel);
+  const activeModelText = lastAssistantMsg?.metadata?.usedModel 
+    ? `Powered by ${lastAssistantMsg.metadata.usedModel}`
+    : 'Powered by Google Gemini';
+
   return (
     <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col h-[600px] transition-colors duration-200">
       {/* Header */}
@@ -45,7 +50,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
               AI Career Assistant
             </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Powered by Google Gemini</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{activeModelText}</p>
           </div>
         </div>
       </div>

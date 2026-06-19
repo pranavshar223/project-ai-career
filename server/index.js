@@ -60,6 +60,7 @@ app.use('/api/jobs', require('./routes/jobs'));
 app.use('/api/roadmaps', require('./routes/roadmaps'));
 app.use('/api/skills', require('./routes/skills'));
 app.use('/api/analytics', require('./routes/analytics'));
+app.use('/api/ai-config', require('./routes/aiConfig'));
 
 // Error handling middleware
 app.use(errorHandler);

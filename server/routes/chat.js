@@ -77,6 +77,7 @@ router.post(
       const enhancedContext = {
         chatHistory: recentChatHistory.slice(0, -1),
         userProfile: {
+          _id: user._id,
           background: user.background,
           skills: user.skills,
           careerGoals: user.careerGoals,

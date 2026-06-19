@@ -39,6 +39,7 @@ const Chat: React.FC<ChatProps> = ({ onSessionUpdate }) => {
             content: msg.content,
             role: msg.role as 'user' | 'assistant',
             timestamp: new Date(msg.timestamp),
+            metadata: msg.metadata,
           })
         );
         setMessages(formattedMessages);
@@ -95,6 +96,7 @@ const Chat: React.FC<ChatProps> = ({ onSessionUpdate }) => {
           content: response.data.response.content,
           role: "assistant",
           timestamp: new Date(response.data.response.timestamp),
+          metadata: response.data.metadata,
         };
 
         setMessages((prev) => [...prev, aiMessage]);

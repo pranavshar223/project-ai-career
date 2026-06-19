@@ -4,13 +4,15 @@ const logger = require('../../utils/logger');
 
 class CareerCoachService {
   async execute(payload) {
-    const { userMessage, context } = payload;
-    
+    const { userMessage, context, userId } = payload;
+
     const prompt = buildCareerCoachPrompt(userMessage, context);
 
     try {
       logger.info(`Generating chat response for message: ${userMessage.substring(0, 30)}...`);
-      const data = await executeApiCall(prompt, 'career_chat', true);
+      // Call AI provider (routes to Gemma, Flash, or OpenRouter automatically)
+      // Pass userId so the provider can respect user's AI settings
+      const data = await executeApiCall(prompt, 'career_chat', true, userId);
       return {
         content: this.formatResponse(data.advice || data),
         metadata: this.sanitizeMetadata(data.metadata),
@@ -34,7 +36,7 @@ class CareerCoachService {
     if (!validSentiments.includes(sentiment)) {
       sentiment = 'neutral';
     }
-    return { ...metadata, sentiment };
+    return { ...metadata, sentiment, usedModel: metadata.usedModel };
   }
 
   detectIntent(message) {
@@ -49,7 +51,10 @@ class CareerCoachService {
   generateEnhancedMockResponse(userMessage, context) {
     return {
       content: `I'm here to help with your career! Could you tell me more about your goals so I can provide personalized guidance?`,
-      metadata: { intent: this.detectIntent(userMessage) },
+      metadata: { 
+        intent: this.detectIntent(userMessage),
+        usedModel: 'System Fallback (API Error)'
+      },
       source: 'mock'
     };
   }

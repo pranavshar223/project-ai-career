@@ -1,30 +1,39 @@
 const aiConfig = require('./aiConfig');
+const { getFallbackModel, modelRegistry } = require('./modelRegistry');
+const AISettings = require('../../models/AISettings');
 const logger = require('../../utils/logger');
 
-function getModel(taskType) {
-  if (aiConfig.provider === 'openrouter') {
-    switch (taskType) {
-      case 'career_chat':
-        return aiConfig.models.openrouter.chat;
-      case 'generate_roadmap':
-        return aiConfig.models.openrouter.roadmap;
-      default:
-        return aiConfig.models.openrouter.fallback;
+async function getModel(taskType, userId) {
+  let provider = aiConfig.provider;
+  let model = null;
+
+  if (userId) {
+    try {
+      const settings = await AISettings.findOne({ user: userId });
+      if (settings) {
+        if (settings.activeProvider && settings.activeProvider !== 'system_default') {
+          provider = settings.activeProvider;
+        }
+        if (settings.taskModels && settings.taskModels[taskType]) {
+          model = settings.taskModels[taskType];
+        }
+      }
+    } catch (err) {
+      logger.error('Failed to fetch AI Settings:', err);
     }
   }
 
-  // Gemini specific routing
-  switch(taskType) {
-    case 'generate_roadmap':
-      return aiConfig.models.roadmap;
-    case 'adapt_roadmap':
-      return aiConfig.models.adapt;
-    case 'career_chat':
-      return aiConfig.models.chat;
-    default:
-      logger.warn(`Unknown taskType '${taskType}' in modelRouter, using fallback model`);
-      return aiConfig.models.fallback;
+  if (!model) {
+    model = getFallbackModel(taskType, provider);
   }
+
+  // Ensure the provider matches the model's actual provider
+  const modelDef = modelRegistry.find(m => m.id === model);
+  if (modelDef) {
+    provider = modelDef.provider.toLowerCase() === 'google' ? 'gemini' : 'openrouter';
+  }
+
+  return { model, provider };
 }
 
 module.exports = { getModel };
