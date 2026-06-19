@@ -37,8 +37,8 @@ const AIConfiguration: React.FC = () => {
     try {
       setLoading(true);
       const [registryRes, prefsRes] = await Promise.all([
-        axios.get('/api/ai-config/registry'),
-        axios.get('/api/ai-config/preferences')
+        axios.get('/ai-config/registry'),
+        axios.get('/ai-config/preferences')
       ]);
       setModels(registryRes.data.models);
       setSystemProvider(registryRes.data.systemDefaultProvider);
@@ -57,7 +57,7 @@ const AIConfiguration: React.FC = () => {
   const handleProviderChange = async (provider: string) => {
     try {
       setSaving(true);
-      const res = await axios.put('/api/ai-config/preferences', { activeProvider: provider });
+      const res = await axios.put('/ai-config/preferences', { activeProvider: provider });
       setPreferences(res.data.settings);
     } catch (error) {
       console.error('Error updating provider:', error);
@@ -70,7 +70,7 @@ const AIConfiguration: React.FC = () => {
     try {
       setSaving(true);
       const newModels = { ...preferences.taskModels, [taskType]: modelId };
-      const res = await axios.put('/api/ai-config/preferences', { taskModels: newModels });
+      const res = await axios.put('/ai-config/preferences', { taskModels: newModels });
       setPreferences(res.data.settings);
     } catch (error) {
       console.error('Error updating model:', error);
@@ -82,7 +82,7 @@ const AIConfiguration: React.FC = () => {
   const handlePreset = async (presetName: string) => {
     try {
       setSaving(true);
-      const res = await axios.post('/api/ai-config/preferences/presets', { presetName });
+      const res = await axios.post('/ai-config/preferences/presets', { presetName });
       setPreferences(res.data.settings);
     } catch (error) {
       console.error('Error applying preset:', error);

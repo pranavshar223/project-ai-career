@@ -23,6 +23,11 @@ const whitelist = [
   'https://ai-career-assistant-v2.firebaseapp.com/',
 ];
 
+if (process.env.ALLOWED_ORIGINS) {
+  const envOrigins = process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim());
+  whitelist.push(...envOrigins);
+}
+
 const corsOptions = {
   origin: function (origin, callback) {
     if (!origin || whitelist.indexOf(origin) !== -1) {

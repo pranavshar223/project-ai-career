@@ -4,7 +4,7 @@ const ChatMessage = require("../models/ChatMessage");
 const UserSession = require("../models/UserSession");
 const User = require("../models/User");
 const auth = require("../middleware/auth");
-const geminiService = require("../services/geminiService");
+const careerAgent = require("../services/agent/careerAgent");
 
 const router = express.Router();
 
@@ -38,21 +38,23 @@ router.post(
       const userId = req.user._id;
       const startTime = Date.now();
 
-      // Get or create user session
-      let userSession = await UserSession.findOne({ sessionId, userId });
-      if (!userSession) {
-        userSession = new UserSession({
-          userId,
-          sessionId,
-          startTime: new Date(),
-          deviceInfo: {
-            userAgent: req.headers["user-agent"],
-            platform: req.headers["sec-ch-ua-platform"],
-            browser: req.headers["sec-ch-ua"],
-          },
-        });
-        await userSession.save();
-      }
+      // Get or create user session atomically to avoid race conditions
+      const userSession = await UserSession.findOneAndUpdate(
+        { sessionId, userId },
+        {
+          $setOnInsert: {
+            userId,
+            sessionId,
+            startTime: new Date(),
+            deviceInfo: {
+              userAgent: req.headers["user-agent"],
+              platform: req.headers["sec-ch-ua-platform"],
+              browser: req.headers["sec-ch-ua"],
+            },
+          }
+        },
+        { new: true, upsert: true, setDefaultsOnInsert: true }
+      );
 
       // Save user message
       const userMessage = new ChatMessage({
@@ -91,11 +93,12 @@ router.post(
         },
       };
 
-      // ✅ Generate AI chat response using geminiService
-      const aiResponse = await geminiService.generateResponse(
-        content,
-        enhancedContext
-      );
+      // ✅ Generate AI chat response using careerAgent directly
+      const aiResponse = await careerAgent.executeTask('career_chat', {
+        userMessage: content,
+        context: enhancedContext,
+        userId
+      });
 
       const processingTime = Date.now() - startTime;
 

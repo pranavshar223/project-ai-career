@@ -3,7 +3,7 @@ const { body, validationResult } = require('express-validator');
 const Roadmap = require('../models/Roadmap');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
-const geminiService = require('../services/geminiService');
+const careerAgent = require('../services/agent/careerAgent');
 const mongoose = require('mongoose');
 const router = express.Router();
 
@@ -39,10 +39,14 @@ router.post('/generate', auth, [
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     // ✅ Use the dedicated generateRoadmap function (NOT generateResponse)
-    const roadmapData = await geminiService.generateRoadmap(careerGoal, {
-      userProfile: user,
-      targetRole,
-      timeframe
+    const roadmapData = await careerAgent.executeTask('generate_roadmap', {
+      careerGoal,
+      context: {
+        userProfile: user,
+        targetRole,
+        timeframe
+      },
+      userId
     });
 
     const roadmap = new Roadmap({
@@ -92,7 +96,12 @@ router.post('/:id/adapt', auth, async (req, res) => {
     if (!triggeredItem) return res.status(404).json({ message: 'Item not found' });
 
     // Call AI to generate adaptive tasks
-    const adaptation = await geminiService.adaptRoadmap(roadmap, triggerType, triggeredItem);
+    const adaptation = await careerAgent.executeTask('adapt_roadmap', {
+      roadmap,
+      triggerType,
+      triggeredItem,
+      userId: req.user._id
+    });
 
     if (!adaptation.newItems || adaptation.newItems.length === 0) {
       return res.status(200).json({
@@ -179,7 +188,12 @@ router.put('/:id/items/:itemId/toggle', auth, async (req, res) => {
     let adaptationTriggered = false;
     if (item.completed && req.body.autoAdapt !== false) {
       try {
-        const adaptation = await geminiService.adaptRoadmap(roadmap, 'completed', item);
+        const adaptation = await careerAgent.executeTask('adapt_roadmap', {
+          roadmap,
+          triggerType: 'completed',
+          triggeredItem: item,
+          userId: req.user._id
+        });
         if (adaptation.newItems?.length > 0) {
           const today = new Date();
           const maxOrder = Math.max(...roadmap.items.map(i => i.order), 0);

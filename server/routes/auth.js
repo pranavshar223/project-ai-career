@@ -3,14 +3,28 @@ const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
+const rateLimit = require('express-rate-limit');
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limit each IP to 5 login requests per windowMs
+  message: { message: 'Too many login attempts from this IP, please try again after 15 minutes' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 const router = express.Router();
 
 // Generate JWT token
 const generateToken = (userId) => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('FATAL: JWT_SECRET environment variable is not configured. Authentication cannot proceed safely.');
+  }
+  
   return jwt.sign(
     { userId },
-    process.env.JWT_SECRET || 'fallback-secret-key',
+    secret,
     { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
   );
 };
@@ -59,9 +73,12 @@ router.post('/register', [
 });
 
 // @route   POST /api/auth/login
+// @desc    Authenticate user & get token
+// @access  Public
 router.post('/login', [
-  body('email').isEmail().normalizeEmail().withMessage('Please provide a valid email'),
-  body('password').notEmpty().withMessage('Password is required')
+  loginLimiter,
+  body('email').isEmail().normalizeEmail().withMessage('Please include a valid email'),
+  body('password').exists().withMessage('Password is required')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
