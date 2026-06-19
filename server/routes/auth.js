@@ -17,14 +17,9 @@ const router = express.Router();
 
 // Generate JWT token
 const generateToken = (userId) => {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    throw new Error('FATAL: JWT_SECRET environment variable is not configured. Authentication cannot proceed safely.');
-  }
-  
   return jwt.sign(
     { userId },
-    secret,
+    process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
   );
 };
@@ -78,7 +73,7 @@ router.post('/register', [
 router.post('/login', [
   loginLimiter,
   body('email').isEmail().normalizeEmail().withMessage('Please include a valid email'),
-  body('password').exists().withMessage('Password is required')
+  body('password').notEmpty().withMessage('Password is required')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);

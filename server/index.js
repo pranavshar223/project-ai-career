@@ -13,6 +13,15 @@ if (process.env.NODE_ENV !== 'production') {
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Validate essential environment variables at boot
+if (!process.env.JWT_SECRET) {
+  console.error('FATAL ERROR: JWT_SECRET environment variable is not configured.');
+  process.exit(1);
+}
+
+// Trust proxy for express-rate-limit when deployed behind reverse proxies
+app.set('trust proxy', 1);
+
 // Connect to database
 connectDB();
 
@@ -24,8 +33,36 @@ const whitelist = [
 ];
 
 if (process.env.ALLOWED_ORIGINS) {
-  const envOrigins = process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim());
-  whitelist.push(...envOrigins);
+  const rawOrigins = process.env.ALLOWED_ORIGINS.split(',');
+
+  const envOrigins = rawOrigins
+    .map(o => o.trim())
+    // drop empty entries
+    .filter(Boolean)
+    // normalize trailing slash so it matches the Origin header
+    .map(origin => (origin.endsWith('/') ? origin.slice(0, -1) : origin))
+    // validate and filter out invalid / insecure values
+    .filter(origin => {
+      if (origin === '*') {
+        console.warn('Ignoring insecure CORS origin "*" from ALLOWED_ORIGINS');
+        return false;
+      }
+
+      // Basic origin format check: scheme://host[:port]
+      const isValidOrigin = /^https?:\/\/[^/\s]+(:\d+)?$/.test(origin);
+      if (!isValidOrigin) {
+        console.warn(`Ignoring invalid CORS origin from ALLOWED_ORIGINS: "${origin}"`);
+      }
+
+      return isValidOrigin;
+    });
+
+  // Add to whitelist, avoiding duplicates
+  envOrigins.forEach(origin => {
+    if (!whitelist.includes(origin)) {
+      whitelist.push(origin);
+    }
+  });
 }
 
 const corsOptions = {
