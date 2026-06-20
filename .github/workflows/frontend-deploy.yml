@@ -12,6 +12,7 @@ on:
       - 'firebase.json'
       - '.firebaserc'
       - '.github/workflows/frontend-deploy.yml'
+  workflow_dispatch:
 
 jobs:
   build_and_deploy:
