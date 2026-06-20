@@ -5,7 +5,7 @@ import { User } from '../types';
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 axios.defaults.baseURL = API_BASE_URL;
 
-interface AuthContextType {
+export interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
@@ -16,16 +16,7 @@ interface AuthContextType {
   token: string | null;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// eslint-disable-next-line react-refresh/only-export-components
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 interface AuthProviderProps {
   children: ReactNode;

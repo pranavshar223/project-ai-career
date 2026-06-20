@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AuthProvider } from './contexts/AuthContext';
+import { useAuth } from './hooks/useAuth';
 import { ThemeProvider } from './contexts/ThemeContext';
 import Sidebar from './components/Layout/Sidebar';
 import Header from './components/Layout/Header';

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { ChevronLeft, Loader2, Target, BrainCircuit, Compass, Check, SkipForward, ArrowRight } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 
 type QuestionType = 'mcq' | 'msq' | 'input' | 'textarea' | 'info' | 'success' | 'welcome';
 
@@ -229,8 +229,11 @@ const Onboarding: React.FC = () => {
         throw new Error('No user data returned');
       }
     } catch (err: unknown) {
-      const errorResponse = err as { response?: { data?: { message?: string } } };
-      setError(errorResponse.response?.data?.message || 'Something went wrong. Please try again.');
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.message || 'Something went wrong. Please try again.');
+      } else {
+        setError('Something went wrong. Please try again.');
+      }
       setIsSubmitting(false);
     }
   };

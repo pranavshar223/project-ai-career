@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Briefcase } from 'lucide-react';
 import JobCard from '../components/Jobs/JobCard';
 import { Job } from '../types';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 
 interface JobsProps {
   searchQuery?: string;

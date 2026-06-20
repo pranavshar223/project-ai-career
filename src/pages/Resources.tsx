@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import axios from 'axios';
 import { Search, BookOpen, Video, FileText, Wrench, Map, ExternalLink, Bookmark, Sparkles, Plus, Loader2 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 
 // Mock Data
 type Category = 'All' | 'AI Suggested' | 'Courses' | 'Articles' | 'Tools' | 'Roadmaps';
