@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Moon, Sun, Bell, Shield, Key, Smartphone, Monitor, BrainCircuit } from 'lucide-react';
-import { useTheme } from '../contexts/ThemeContext';
+import { useTheme } from '../hooks/useTheme';
 import AIConfiguration from '../components/settings/AIConfiguration';
 
 const Settings: React.FC = () => {

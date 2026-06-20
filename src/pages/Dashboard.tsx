@@ -5,7 +5,7 @@ import SkillGapChart from "../components/Dashboard/SkillGapChart";
 import StreakTracker from "../components/Dashboard/StreakTracker";
 import RoadmapTimeline from "../components/Dashboard/RoadmapTimeline";
 import { SkillGap, Roadmap, RoadmapItem, Skill, User, DashboardAnalytics } from "../types";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from '../hooks/useAuth';
 import { Link } from "react-router-dom";
 
 const Dashboard: React.FC = () => {

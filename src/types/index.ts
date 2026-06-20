@@ -4,6 +4,7 @@ export interface User {
   name: string;
   role: 'student' | 'professional' | 'career_switcher';
   onboardingCompleted: boolean;
+  onboardingProfile?: Record<string, string | string[]>;
   onboardingVersion?: number;
   journeyIntent?: 'focused' | 'exploring' | 'career_change';
   createdAt: Date;
@@ -52,7 +53,7 @@ export interface ChatMessage {
   content: string;
   role: 'user' | 'assistant';
   timestamp: Date;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 export interface ApiChatMessage {
@@ -60,7 +61,7 @@ export interface ApiChatMessage {
   content: string;
   role: string;
   timestamp: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 export interface SkillGap {

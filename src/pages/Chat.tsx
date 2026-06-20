@@ -3,7 +3,7 @@ import axios, { AxiosError } from "axios";
 import { useParams, useNavigate } from "react-router-dom";
 import ChatInterface from "../components/Chat/ChatInterface";
 import { ChatMessage, ApiChatMessage } from "../types";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from '../hooks/useAuth';
 
 interface ChatProps {
   onSessionUpdate?: (session: { id: string; title: string; date: string }) => void;
