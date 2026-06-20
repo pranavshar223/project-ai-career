@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
+import React, { createContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { User } from '../types';
 
@@ -16,6 +16,7 @@ export interface AuthContextType {
   token: string | null;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 interface AuthProviderProps {

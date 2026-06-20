@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useLayoutEffect, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useLayoutEffect, useEffect, useState, ReactNode } from 'react';
 
 // Falls back to useEffect in non-browser environments (SSR, tests, prerender)
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
@@ -8,6 +8,7 @@ interface ThemeContextType {
   toggleTheme: () => void;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 interface ThemeProviderProps {
