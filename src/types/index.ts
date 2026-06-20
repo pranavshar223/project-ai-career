@@ -4,6 +4,7 @@ export interface User {
   name: string;
   role: 'student' | 'professional' | 'career_switcher';
   onboardingCompleted: boolean;
+  onboardingProfile?: Record<string, string | string[]>;
   onboardingVersion?: number;
   journeyIntent?: 'focused' | 'exploring' | 'career_change';
   createdAt: Date;
