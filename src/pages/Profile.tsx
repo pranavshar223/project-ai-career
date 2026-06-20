@@ -9,7 +9,7 @@ const Profile: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [isEditingOnboarding, setIsEditingOnboarding] = useState(false);
+
   const [isEditingEdu, setIsEditingEdu] = useState(false);
   const [isEditingCompany, setIsEditingCompany] = useState(false);
   const [newSkill, setNewSkill] = useState({ name: '', level: 'beginner', category: 'general' });
@@ -118,21 +118,7 @@ const Profile: React.FC = () => {
     }
   };
 
-  const handleSaveOnboarding = async () => {
-    setIsSaving(true);
-    try {
-      await axios.put('/users/profile', {
-        profile: profile.profile
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setIsEditingOnboarding(false);
-    } catch (error) {
-      console.error('Error saving career preferences:', error);
-    } finally {
-      setIsSaving(false);
-    }
-  };
+
 
   const handleSaveEdu = async () => {
     setIsSaving(true);

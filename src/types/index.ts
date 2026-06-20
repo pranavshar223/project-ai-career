@@ -52,7 +52,7 @@ export interface ChatMessage {
   content: string;
   role: 'user' | 'assistant';
   timestamp: Date;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 export interface ApiChatMessage {
@@ -60,7 +60,7 @@ export interface ApiChatMessage {
   content: string;
   role: string;
   timestamp: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 export interface SkillGap {

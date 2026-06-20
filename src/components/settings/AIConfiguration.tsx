@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Cpu, Zap, BrainCircuit, FileJson, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Cpu, Zap, BrainCircuit, FileJson, CheckCircle2 } from 'lucide-react';
 import axios from 'axios';
 
 interface AIModel {
