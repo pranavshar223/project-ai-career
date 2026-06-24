@@ -4,21 +4,57 @@ import { User, Calendar, Book, Award, Target, Plus, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import type { Skill, CareerGoal } from '../types';
 
+interface UserProfileState {
+  name: string;
+  email: string;
+  background: string;
+  role: string;
+  profile: {
+    bio: string;
+    location: string;
+    website: string;
+    experience: string;
+    interests: string[];
+    learningStyle: string;
+    weeklyTime: number;
+    confidenceLevel: string;
+    institution: string;
+    graduationYear: number;
+    challenges: string[];
+  };
+  skills: Skill[];
+  careerGoals: CareerGoal[];
+  preferences: {
+    jobLocation: string;
+    jobType: string;
+    remoteWork: boolean;
+    salaryRange: { min: number; max: number };
+    preferredCompanyTypes: string[];
+    dreamCompanies: string;
+  };
+  streak: {
+    current: number;
+    longest: number;
+    completedDays: string[];
+  };
+  createdAt: Date;
+}
+
 const Profile: React.FC = () => {
   const { token } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [isEditingOnboarding, setIsEditingOnboarding] = useState(false);
   const [isEditingEdu, setIsEditingEdu] = useState(false);
   const [isEditingCompany, setIsEditingCompany] = useState(false);
   const [newSkill, setNewSkill] = useState({ name: '', level: 'beginner', category: 'general' });
-  const [newGoal, setNewGoal] = useState({ title: '', description: '', priority: 'medium' });
+  const [newGoal, setNewGoal] = useState<Omit<CareerGoal, '_id'>>({ title: '', description: '', priority: 'medium' });
 
-  const [profile, setProfile] = useState({
+  const [profile, setProfile] = useState<UserProfileState>({
     name: '',
     email: '',
     background: 'professional',
+    role: '',
     profile: {
       bio: '',
       location: '',
@@ -118,21 +154,7 @@ const Profile: React.FC = () => {
     }
   };
 
-  const handleSaveOnboarding = async () => {
-    setIsSaving(true);
-    try {
-      await axios.put('/users/profile', {
-        profile: profile.profile
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setIsEditingOnboarding(false);
-    } catch (error) {
-      console.error('Error saving career preferences:', error);
-    } finally {
-      setIsSaving(false);
-    }
-  };
+
 
   const handleSaveEdu = async () => {
     setIsSaving(true);
@@ -200,7 +222,7 @@ const Profile: React.FC = () => {
   const handleAddGoal = async () => {
     if (!newGoal.title.trim()) return;
     // Optimistic update — show new goal immediately with a temp id
-    const tempGoal = { ...newGoal, _id: `temp_${Date.now()}` };
+    const tempGoal: CareerGoal = { ...newGoal, _id: `temp_${Date.now()}` };
     setProfile(prev => ({ ...prev, careerGoals: [...prev.careerGoals, tempGoal] }));
     setNewGoal({ title: '', description: '', priority: 'medium' });
     setIsSaving(true);
@@ -607,11 +629,12 @@ const Profile: React.FC = () => {
                   >
                     <span>{skill.name} ({skill.level})</span>
                     <button
+                      disabled={!skill._id}
                       onClick={() => {
                         console.log("Clicked delete for", skill._id);
-                        handleRemoveSkill(skill._id);
+                        if (skill._id) handleRemoveSkill(skill._id);
                       }}
-                      className="ml-2 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200"
+                      className="ml-2 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -675,8 +698,9 @@ const Profile: React.FC = () => {
                       </div>
                     </div>
                     <button
-                      onClick={() => handleRemoveGoal(goal._id)}
-                      className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+                      disabled={!goal._id}
+                      onClick={() => goal._id && handleRemoveGoal(goal._id)}
+                      className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-red-600 dark:disabled:hover:text-red-400"
                     >
                       <X className="w-4 h-4" />
                     </button>

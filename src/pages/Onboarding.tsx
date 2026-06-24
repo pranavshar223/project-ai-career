@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { ChevronRight, ChevronLeft, Loader2, Target, BrainCircuit, Compass, RefreshCcw, Check, SkipForward, ArrowRight } from 'lucide-react';
+import { ChevronLeft, Loader2, Target, BrainCircuit, Compass, Check, SkipForward, ArrowRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 type QuestionType = 'mcq' | 'msq' | 'input' | 'textarea' | 'info' | 'success' | 'welcome';
+
+type OnboardingAnswer = string | string[] | number | boolean;
+type OnboardingAnswers = Record<string, OnboardingAnswer>;
 
 interface Question {
   id: number;
@@ -155,7 +158,7 @@ const questions: Question[] = [
 
 const Onboarding: React.FC = () => {
   const [step, setStep] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, any>>({});
+  const [answers, setAnswers] = useState<OnboardingAnswers>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   
@@ -177,7 +180,7 @@ const Onboarding: React.FC = () => {
   const currentStep = questions.slice(0, step + 1).filter(q => q.field).length;
   const progressPercent = Math.max(0, Math.min(100, (currentStep / totalSteps) * 100));
 
-  const saveProgress = async (newAnswers: Record<string, any>, isFinal = false) => {
+  const saveProgress = async (newAnswers: OnboardingAnswers, isFinal = false) => {
     const res = await axios.post('/users/onboarding', {
       ...newAnswers,
       ...(isFinal ? { onboardingCompleted: true } : {})
@@ -228,8 +231,13 @@ const Onboarding: React.FC = () => {
       } else {
         throw new Error('No user data returned');
       }
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Something went wrong. Please try again.');
+    } catch (err: unknown) {
+      if (axios.isAxiosError<{ message?: string }>(err)) {
+        const message = err.response?.data?.message;
+        setError(message || 'Something went wrong. Please try again.');
+      } else {
+        setError('Something went wrong. Please try again.');
+      }
       setIsSubmitting(false);
     }
   };
