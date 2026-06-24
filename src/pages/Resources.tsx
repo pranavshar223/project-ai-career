@@ -316,7 +316,9 @@ const Resources: React.FC = () => {
                       try {
                         const parsed = new URL(resource.url);
                         isValid = parsed.protocol === 'http:' || parsed.protocol === 'https:';
-                      } catch { }
+                      } catch {
+                        // Ignore invalid URLs
+                      }
 
                       return isValid ? (
                         <a
